@@ -1,113 +1,25 @@
 ---
 name: paper-navigator
-description: Create evidence-linked, desktop-first HTML guides for academic papers from a PDF, extracted text, figures, or an existing explainer. Use when Codex needs a full paper walkthrough with canonical sections, formulas, figures, tables, notes, paper-order fidelity, and a portable bundle rather than a short summary.
+description: Create evidence-linked HTML walkthroughs for computing and information-engineering papers from a PDF, extracted text, figures, tables, or an existing explainer. Use when Codex needs a complete paper guide with fixed overview-to-conclusion sections, formulas, evidence, notes, paper-order fidelity, and a portable bundle.
 ---
 
 # Paper Navigator
 
-Build a paper guide: a research-dashboard HTML page that explains the paper in depth while keeping every factual claim traceable to the PDF.
+Build a portable paper guide whose factual claims remain traceable to the PDF. Write explanatory prose in Traditional Chinese by default while preserving model names, metrics, formula symbols, and `Fig./Table/Eq.` identifiers.
 
-## Contract
-
-Accept one or more of:
-
-- paper PDF;
-- extracted text or page renders;
-- extracted figures/tables;
-- an existing explainer used as a design reference.
-
-Produce a portable bundle:
-
-```text
-paper-guide.html
-html_assets/
-  images/
-  pages/
-  other local assets
-```
-
-Use the project language by default. In this project, write explanatory prose in Traditional Chinese while preserving model names, metrics, formula symbols, and `Fig./Table/Eq.` identifiers.
+Deliver the guide as one HTML file plus a sibling asset folder for local images, page renders, and other required files. Do not require a build step or server for normal reading.
 
 ## Workflow
 
-### 1. Inspect and establish sources
+1. **Inspect sources.** Inventory the PDF, extracted text, page renders, figures, tables, existing HTML, and project notes. Treat the PDF as the factual source; use derived text for search and the existing HTML only as a design reference.
+2. **Plan evidence.** Map every technical paragraph group, formula, figure/table reading, result, limitation, and conclusion to source pages. Mark missing details `not reported` or `unverified`; do not infer absent methods or values.
+3. **Build the manifest.** Use the fixed order `overview`, `context`, `problem`, `approach`, `setup`, `results`, `discussion`, `conclusion`. Give every section a coverage status and every evidence block its section ID, source pages, evidence kind, and verification status.
+4. **Write the guide.** Start from `assets/blank-paper-explainer.html`. Keep the shared full-width sidebars and half-width drawers, section-level notes, TOC state, depth presets, formula fallbacks, keyboard lightbox, local assets, and PDF table order. Put figures and appendix material in the section that uses them.
+5. **Validate.** Run `scripts/quick_validate.py` with `--strict`, plus the repository's required syntax and fixture checks. When the template, layout, or interaction changes, smoke-test the same page at `1600×1000` and `800×1000`; check both widths for anchors, notes, depth controls, lightbox, and no page-level horizontal overflow.
+6. **Deliver.** Report absolute artifact paths, validation results, viewport sizes, and any `not reported`, `unverified`, or network limitations. Keep the project-local skill as the source of truth; sync elsewhere only when explicitly requested.
 
-Locate the PDF, derived text, page renders, figures, tables, existing HTML, and project notes. Treat the PDF as the factual source; use extracted text for search and drafting, and existing HTML only as a design reference.
+## Content contract
 
-Complete this step when the source inventory lists each available asset and identifies missing or conflicting sources.
+Use complete paragraphs for explanations, section introductions, method interpretation, result interpretation, formula explanations, and important figure/table guides. Use `details[data-depth="study"]` and `details[data-depth="deep"]` for progressive disclosure; `概覽／研讀／深入` presets may only open or close those same details, while users can still toggle each one.
 
-### 2. Build the guide manifest
-
-Create a build-time manifest containing metadata, the canonical section order, evidence blocks, notes, figures, tables, and local asset paths. Do not add a generic renderer in v1; use the manifest as a data contract while producing the HTML.
-
-Use these canonical sections in PDF order:
-
-```text
-why, idea, method, io, arch, heads, coord, train,
-metrics, exp, ablate, runtime, limit, appendix, figures, discussion
-```
-
-Give every section a coverage status: `present`, `not reported`, `not applicable`, or `unverified`. Never fill a missing paper section with speculation.
-
-Complete this step when every section has a status and every technical block has a source page or an explicit missing-evidence status.
-
-### 3. Extract evidence and plan content
-
-For each evidence block, record:
-
-- `section_id`;
-- source page(s);
-- related `Fig.`, `Table`, `Eq.`, or appendix identifiers;
-- `evidence_kind`: `paper-stated`, `derived`, or `guide-inference`;
-- verification status.
-
-Preserve the PDF order of paragraphs, figures, tables, equations, and table rows. Guide annotations such as `best` badges, metric bars, and reading notes may be added only when clearly distinguishable from paper content.
-
-Complete this step when the content map can explain the method, implementation, experiments, limitations, and discussion without unsupported claims.
-
-### 4. Build the page
-
-Start from `assets/blank-paper-explainer.html`. Keep the canonical desktop layout:
-
-- left TOC;
-- center paper guide;
-- right `terms / figs / formula` notes.
-
-Required interaction:
-
-- TOC anchors and active-section highlighting;
-- mobile horizontal navigation;
-- contextual notes tabs;
-- figure lightbox.
-
-Do not add sortable tables or simulator/canvas modules. Keep tables in PDF order. Use static figures, formulas, method steps, and annotated explanations for mechanisms.
-
-Use MathJax from the existing CDN path. Give each major formula a readable text fallback so the content remains understandable when MathJax is unavailable.
-
-Use a responsive stack for mobile preview: hide fixed sidebars, stack content, preserve image aspect ratios, and allow horizontal scrolling for wide equations or tables. Desktop direct-file viewing is the primary target; mobile JavaScript parity is best effort.
-
-Complete this step when the HTML contains the required sections, notes, local asset paths, paper-order tables, and formula fallbacks without unfinished placeholders.
-
-### 5. Validate
-
-Run the bundled static validator:
-
-```bash
-python3 skills/paper-navigator/scripts/quick_validate.py path/to/paper-guide.html
-```
-
-It must check section/notes coverage, local assets, anchors, paper-order manifest data, formula fallbacks, prohibited sortable/simulator code, placeholders, external runtime rules, and JavaScript syntax when Node is available.
-
-When changing the template, renderer process, or interaction code, also run browser smoke checks. When changing layout or style, perform visual review. These checks remain outside the static validator.
-
-Complete this step when static validation passes and any required browser or visual checks pass for the changed surface.
-
-### 6. Deliver
-
-Report the absolute paths of the HTML, assets, manifest, and validation result. State any `not reported`, `unverified`, network, or mobile-preview limitations. Keep the development skill in the project and sync it to the installed skill path only after validation.
-
-## References
-
-Read [references/guide.md](references/guide.md) for the manifest shape, section requirements, layout rules, interaction boundaries, and validation details.
-
-Use [assets/blank-paper-explainer.html](assets/blank-paper-explainer.html) as the starter template. Use [scripts/quick_validate.py](scripts/quick_validate.py) for output validation; it is not a generic HTML renderer.
+Read [references/guide.md](references/guide.md) before drafting content or changing the manifest, notes schema, interaction boundary, or validation rules. Use [assets/blank-paper-explainer.html](assets/blank-paper-explainer.html) as the starter template and [scripts/quick_validate.py](scripts/quick_validate.py) as the static contract checker, not as a generic renderer.

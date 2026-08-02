@@ -17,8 +17,8 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 CANONICAL_SECTIONS = [
-    "why", "idea", "method", "io", "arch", "heads", "coord", "train",
-    "metrics", "exp", "ablate", "runtime", "limit", "appendix", "figures", "discussion",
+    "overview", "context", "problem", "approach",
+    "setup", "results", "discussion", "conclusion",
 ]
 COVERAGE_STATUSES = {"present", "not reported", "not applicable", "unverified"}
 EVIDENCE_KINDS = {"paper-stated", "derived", "guide-inference"}
@@ -35,6 +35,14 @@ class GuideParser(HTMLParser):
         self.image_alts: list[str] = []
         self.scripts: list[dict[str, str]] = []
         self.elements: list[tuple[str, dict[str, str]]] = []
+        self.section_intro_counts: dict[str, int] = {}
+        self.depth_presets: list[str] = []
+        self.depth_details: list[str] = []
+        self.depth_details_by_section: dict[str, set[str]] = {}
+        self.fallbacks_by_section: dict[str, set[str]] = {}
+        self.canvas_sections: list[str | None] = []
+        self.simulator_sections: list[str | None] = []
+        self._section_stack: list[str] = []
         self._script: dict[str, object] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -45,6 +53,24 @@ class GuideParser(HTMLParser):
             self.ids.append(values["id"])
         if tag == "section" and values.get("id"):
             self.sections.append(values["id"])
+            self._section_stack.append(values["id"])
+        if tag == "p" and self._section_stack and "section-intro" in values.get("class", "").split():
+            section_id = self._section_stack[-1]
+            self.section_intro_counts[section_id] = self.section_intro_counts.get(section_id, 0) + 1
+        if values.get("data-depth-preset"):
+            self.depth_presets.append(values["data-depth-preset"])
+        if values.get("data-depth"):
+            depth = values["data-depth"]
+            self.depth_details.append(depth)
+            if self._section_stack:
+                self.depth_details_by_section.setdefault(self._section_stack[-1], set()).add(depth)
+        if values.get("data-fallback-for"):
+            section_id = self._section_stack[-1] if self._section_stack else ""
+            self.fallbacks_by_section.setdefault(section_id, set()).add(values["data-fallback-for"])
+        if tag == "canvas":
+            self.canvas_sections.append(self._section_stack[-1] if self._section_stack else None)
+        if "data-simulator" in values or "simulator" in values.get("class", "").split():
+            self.simulator_sections.append(self._section_stack[-1] if self._section_stack else None)
         if tag == "a" and "href" in values:
             self.links.append((values["href"], "href"))
         if tag in {"img", "source"} and values.get("src"):
@@ -64,6 +90,8 @@ class GuideParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "script":
             self._script = None
+        elif tag == "section" and self._section_stack:
+            self._section_stack.pop()
 
 
 def add_error(errors: list[str], message: str) -> None:
@@ -163,9 +191,13 @@ def check_notes(source: str, sections: list[str], errors: list[str], warnings: l
             if not isinstance(value, dict):
                 add_error(errors, f"notes-data entry is not an object: {section}")
                 continue
-            for tab in ("terms", "figs", "formula"):
+            expected_tabs = {"context", "terms", "evidence", "review"}
+            for tab in sorted(expected_tabs):
                 if tab not in value or not isinstance(value[tab], list):
                     add_error(errors, f"notes-data.{section}.{tab} must be an array")
+            extra_tabs = sorted(set(value) - expected_tabs)
+            if extra_tabs:
+                add_error(errors, f"notes-data.{section} has unknown tabs: {', '.join(extra_tabs)}")
         return
 
     keys = legacy_note_keys(source, sections)
@@ -177,6 +209,8 @@ def check_notes(source: str, sections: list[str], errors: list[str], warnings: l
             add_error(errors, message)
         else:
             add_warning(warnings, message)
+    elif strict:
+        add_error(errors, "strict guide requires notes-data JSON with context, terms, evidence, and review arrays")
 
 
 def check_manifest(source: str, sections: list[str], errors: list[str], warnings: list[str], strict: bool) -> None:
@@ -192,7 +226,7 @@ def check_manifest(source: str, sections: list[str], errors: list[str], warnings
     if order != sections:
         add_error(errors, "guide-manifest.section_order does not match HTML section order")
     if strict and order != CANONICAL_SECTIONS:
-        add_error(errors, "strict guide must contain the canonical 16-section order")
+        add_error(errors, "strict guide must contain the canonical eight-section order")
     if not payload.get("paper_id"):
         add_error(errors, "guide-manifest.paper_id is missing")
     if not payload.get("language"):
@@ -262,6 +296,47 @@ def check_scripts(parser: GuideParser, source: str, html_path: Path, errors: lis
         add_warning(warnings, "no JavaScript found; interactive features cannot run")
 
 
+def check_paragraph_contract(parser: GuideParser, errors: list[str]) -> None:
+    for section in parser.sections:
+        required = 2 if section == "overview" else 1
+        actual = parser.section_intro_counts.get(section, 0)
+        if actual < required:
+            add_error(errors, f"section {section} needs at least {required} section-intro paragraphs; found {actual}")
+
+
+def check_depth_contract(parser: GuideParser, errors: list[str]) -> None:
+    required_presets = {"overview", "study", "deep"}
+    actual_presets = set(parser.depth_presets)
+    missing_presets = sorted(required_presets - actual_presets)
+    extra_presets = sorted(actual_presets - required_presets)
+    if missing_presets:
+        add_error(errors, f"depth presets missing: {', '.join(missing_presets)}")
+    if extra_presets:
+        add_error(errors, f"unknown depth presets: {', '.join(extra_presets)}")
+
+    required_details = {"study", "deep"}
+    actual_details = set(parser.depth_details)
+    missing_details = sorted(required_details - actual_details)
+    if missing_details:
+        add_error(errors, f"depth details missing: {', '.join(missing_details)}")
+    invalid_details = sorted(actual_details - required_details)
+    if invalid_details:
+        add_error(errors, f"unknown depth details: {', '.join(invalid_details)}")
+    for section in parser.sections:
+        missing = sorted(required_details - parser.depth_details_by_section.get(section, set()))
+        if missing:
+            add_error(errors, f"section {section} is missing depth details: {', '.join(missing)}")
+
+
+def check_interactive_fallbacks(parser: GuideParser, errors: list[str]) -> None:
+    for kind, sections in (("canvas", parser.canvas_sections), ("simulator", parser.simulator_sections)):
+        for section in sections:
+            if section is None:
+                add_error(errors, f"{kind} content must be inside a guide section")
+            elif kind not in parser.fallbacks_by_section.get(section, set()):
+                add_error(errors, f"{kind} content in section {section} needs a same-section data-fallback-for={kind} marker")
+
+
 def check_content_contract(source: str, parser: GuideParser, errors: list[str], strict: bool) -> None:
     if re.search(r"\{\{[^}]+\}\}", source):
         add_error(errors, "unfinished template placeholder found")
@@ -269,16 +344,12 @@ def check_content_contract(source: str, parser: GuideParser, errors: list[str], 
         add_error(errors, "unfinished draft marker found")
     if re.search(r'class=["\'][^"\']*\bsortable\b', source, re.IGNORECASE) or re.search(r"table\.sortable|sortTable", source):
         add_error(errors, "sortable table behavior is prohibited")
-    if re.search(r'<canvas\b|data-simulator|class=["\'][^"\']*\bsimulator\b', source, re.IGNORECASE):
-        add_error(errors, "simulator/canvas behavior is prohibited in v1")
-    equation_count = len(re.findall(r'class=["\'][^"\']*\bequation\b', source, re.IGNORECASE))
-    fallback_count = len(re.findall(r'class=["\'][^"\']*\bformula-fallback\b', source, re.IGNORECASE))
+    equation_count = sum("equation" in attrs.get("class", "").split() for _, attrs in parser.elements)
+    fallback_count = sum("formula-fallback" in attrs.get("class", "").split() for _, attrs in parser.elements)
     if equation_count and fallback_count < equation_count:
         add_error(errors, f"formula fallback coverage is incomplete: {fallback_count}/{equation_count}")
     if strict and not re.search(r'<html[^>]+\blang=["\'][^"\']+["\']', source, re.IGNORECASE):
         add_error(errors, "html lang is missing")
-    if strict and not re.search(r'data-guide-profile=["\']desktop-first["\']', source):
-        add_error(errors, "desktop-first guide profile marker is missing")
     if strict and any(not alt.strip() for alt in parser.image_alts):
         add_error(errors, "every img element must have non-empty alt text")
 
@@ -286,7 +357,7 @@ def check_content_contract(source: str, parser: GuideParser, errors: list[str], 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("html", type=Path, help="paper-guide.html to validate")
-    parser.add_argument("--strict", action="store_true", help="treat manifest and legacy-note gaps as errors")
+    parser.add_argument("--strict", action="store_true", help="treat manifest and notes gaps as errors")
     parser.add_argument("--json", action="store_true", dest="as_json", help="emit a JSON report")
     return parser.parse_args()
 
@@ -311,7 +382,7 @@ def main() -> int:
     if not parser.sections:
         add_error(errors, "no section elements found")
     if args.strict and parser.sections != CANONICAL_SECTIONS:
-        add_error(errors, "strict guide must contain all 16 canonical sections in order")
+        add_error(errors, "strict guide must contain all canonical sections in order")
 
     for image in parser.images:
         if is_external(image):
@@ -322,6 +393,9 @@ def main() -> int:
     check_notes(source, parser.sections, errors, warnings, args.strict)
     check_manifest(source, parser.sections, errors, warnings, args.strict)
     check_scripts(parser, source, html_path, errors, warnings)
+    check_paragraph_contract(parser, errors)
+    check_depth_contract(parser, errors)
+    check_interactive_fallbacks(parser, errors)
     check_content_contract(source, parser, errors, args.strict)
 
     js_scripts = [str(item["data"]) for item in parser.scripts if not item["src"] and str(item["type"]).lower() != "application/json"]

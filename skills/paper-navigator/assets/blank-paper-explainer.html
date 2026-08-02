@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="zh-Hant" data-guide-profile="desktop-first">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2212%22 fill=%22%23174333%22/><path d=%22M17 17h30v7H17zm0 12h30v7H17zm0 12h22v7H17z%22 fill=%22%23eef5f1%22/></svg>">
   <title>{{TITLE}}</title>
   <script>
     window.MathJax = {
@@ -34,13 +35,15 @@
       --soft-blue: #edf5f8;
       --soft-rose: #fbf0f1;
       --radius: 8px;
+      --toolbar-h: 56px;
       --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --serif: Georgia, "Times New Roman", "Noto Serif TC", serif;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; color: var(--ink); background: var(--bg); font-family: var(--serif); font-size: 17px; line-height: 1.78; }
+    html { scroll-behavior: smooth; overflow-x: clip; }
+    body { max-width: 100%; margin: 0; overflow-x: clip; color: var(--ink); background: var(--bg); font-family: var(--serif); font-size: 17px; line-height: 1.78; }
+    body.drawer-open { overflow: hidden; }
     body.mathjax-ready .formula-fallback { display: none; }
     .mathjax-formula { display: none; overflow-x: auto; }
     body.mathjax-ready .mathjax-formula { display: block; }
@@ -48,9 +51,12 @@
     a { color: inherit; text-decoration: none; }
     button { font: inherit; }
     .layout { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr) 300px; }
+    main { min-width: 0; }
     .toc, .notes { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: rgba(255,255,255,.84); backdrop-filter: blur(14px); font-family: var(--sans); }
     .toc { padding: 24px 18px; border-right: 1px solid var(--line); }
     .notes { padding: 24px 20px; border-left: 1px solid var(--line); }
+    .notes h2 { font-size: 28px; }
+    .drawer-close, .compact-bar, .drawer-scrim { display: none; }
     .brand { display: grid; gap: 5px; margin-bottom: 20px; }
     .brand strong { color: var(--green-2); font-size: 15px; letter-spacing: .05em; text-transform: uppercase; }
     .brand span, .note-meta { color: var(--muted); font-size: 12px; line-height: 1.45; }
@@ -59,21 +65,25 @@
     .toc-link:hover, .toc-link.active { color: var(--green-2); background: var(--soft); }
     .toc-link b { font-family: var(--mono); font-size: 11px; color: var(--gold); }
     .toc-link span { font-size: 13px; font-weight: 700; }
-    .mobile-nav { display: none; position: sticky; top: 0; z-index: 20; gap: 8px; overflow-x: auto; padding: 10px 12px; background: rgba(255,255,255,.94); border-bottom: 1px solid var(--line); font-family: var(--sans); }
-    .mobile-nav a { flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: #435049; font-size: 13px; background: var(--paper); }
-    .mobile-nav a.active { color: var(--green-2); border-color: rgba(40,102,79,.36); background: var(--soft); }
     .hero { min-height: 48vh; display: grid; align-items: end; padding: clamp(28px, 6vw, 74px); color: #fff; background: linear-gradient(180deg, rgba(15,35,28,.22), rgba(15,35,28,.88)), url("{{HERO_IMAGE}}") center / cover; }
     .hero-inner { max-width: 920px; }
     .kicker { display: inline-flex; gap: 10px; margin-bottom: 16px; font-family: var(--sans); font-size: 13px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: #e4f2ea; }
     .kicker::before { content: ""; width: 32px; height: 2px; margin-top: .7em; background: #e5c16e; }
     h1 { margin: 0 0 18px; font-size: clamp(38px, 6vw, 70px); line-height: 1.04; }
-    .hero p { max-width: 760px; margin: 0; color: rgba(255,255,255,.9); font-size: clamp(18px, 2vw, 23px); }
     .content { max-width: 1040px; margin: 0 auto; padding: 38px clamp(18px, 4vw, 54px) 72px; }
     section { scroll-margin-top: 28px; padding: 44px 0; border-bottom: 1px solid var(--line); }
     h2 { margin: 0 0 18px; color: var(--green-2); font-size: clamp(28px, 4vw, 42px); line-height: 1.16; }
     h3 { margin: 26px 0 10px; color: #26362f; font-size: 22px; line-height: 1.25; }
     p { margin: 0 0 16px; }
     .lead { color: #3e4b45; font-size: 19px; }
+    .section-intro { max-width: 900px; color: #33443b; font-size: 19px; }
+    .depth-control { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); font-family: var(--sans); }
+    .depth-control > strong { color: var(--green-2); font-size: 13px; }
+    .depth-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+    .depth-preset { min-height: 32px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--paper); cursor: pointer; font-size: 12px; font-weight: 800; }
+    .depth-preset[aria-pressed="true"] { color: var(--green-2); border-color: rgba(40,102,79,.36); background: var(--soft); }
+    .reading-panel { margin-top: 18px; }
+    .reading-panel > p:last-child, .panel > p:last-child { margin-bottom: 0; }
     .ref-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 20px; font-family: var(--sans); }
     .ref { display: inline-flex; min-height: 28px; align-items: center; padding: 4px 8px; border: 1px solid rgba(39,107,143,.22); border-radius: 999px; color: #17465d; background: var(--soft-blue); font-size: 12px; font-weight: 800; }
     .ref.table { border-color: rgba(181,135,52,.28); color: #664812; background: #fff8e8; }
@@ -87,28 +97,31 @@
     .method-steps { counter-reset: step; display: grid; gap: 12px; margin: 22px 0; padding: 0; list-style: none; font-family: var(--sans); }
     .method-steps li { position: relative; padding: 15px 16px 15px 54px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     .method-steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 14px; top: 16px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 999px; color: #fff; background: var(--green); font-size: 12px; font-weight: 900; }
-    .method-steps b { display: block; margin-bottom: 4px; color: #25362f; font-size: 14px; }
-    .method-steps span { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .method-steps strong { display: block; margin-bottom: 4px; color: #25362f; font-size: 14px; }
+    .method-steps p { margin: 0; color: var(--muted); font-family: var(--sans); font-size: 13px; line-height: 1.55; }
     .equation { margin: 20px 0; padding: 18px; border: 1px solid rgba(39,107,143,.22); border-radius: var(--radius); background: #fbfdfd; overflow-x: auto; }
     .equation-title { display: block; margin-bottom: 10px; color: #17465d; font-family: var(--sans); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
     .formula-fallback { color: #24342d; font-family: var(--mono); font-size: 14px; overflow-x: auto; }
-    .metric-table { width: 100%; margin: 22px 0; border-collapse: collapse; border: 1px solid var(--line); background: var(--paper); font-family: var(--sans); font-size: 14px; }
+    .table-scroll { max-width: 100%; margin: 22px 0; overflow-x: auto; }
+    .metric-table { width: 100%; margin: 0; border-collapse: collapse; border: 1px solid var(--line); background: var(--paper); font-family: var(--sans); font-size: 14px; }
     .metric-table th, .metric-table td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
     .metric-table th { color: var(--green-2); background: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
     .best { display: inline-flex; padding: 2px 7px; border-radius: 999px; color: #164432; background: #dff1e8; font-size: 11px; font-weight: 900; }
     .figure { margin: 28px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); overflow: hidden; }
     .figure img { width: 100%; max-height: 820px; object-fit: contain; background: #f3f5f1; cursor: zoom-in; }
     figcaption { padding: 13px 16px 16px; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--sans); font-size: 13px; line-height: 1.55; }
+    figcaption p:last-child { margin-bottom: 0; }
     .page-card { overflow: hidden; font-family: var(--sans); }
     .page-card img { width: 100%; aspect-ratio: 1.55; object-fit: cover; object-position: top center; cursor: zoom-in; background: #f3f5f1; }
     .page-pad { padding: 13px; }
-    .note-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+    .note-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
     .note-tab { min-height: 30px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 800; }
     .note-tab.active { color: var(--green-2); background: var(--soft); border-color: rgba(40,102,79,.36); }
     .note-body { display: grid; gap: 10px; margin-top: 18px; }
     .note-card { padding: 13px; }
     .note-card b { display: block; margin-bottom: 5px; color: #22352d; font-family: var(--sans); font-size: 13px; }
-    .note-card span { color: var(--muted); font-family: var(--sans); font-size: 12px; line-height: 1.5; }
+    .note-card p { margin: 0; color: var(--muted); font-family: var(--sans); font-size: 12px; line-height: 1.5; }
+    .note-card .note-ref { display: block; margin-top: 8px; color: #664812; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
     .note-card .note-eq { display: block; margin: 7px 0; padding: 8px; border-radius: 6px; color: #24342d; background: #f4f6f3; font-family: var(--serif); overflow-x: auto; }
     .lightbox { position: fixed; inset: 0; z-index: 99; display: none; align-items: center; justify-content: center; padding: 28px; background: rgba(8,16,13,.88); }
     .lightbox.open { display: flex; }
@@ -116,62 +129,75 @@
     .close { position: fixed; top: 18px; right: 18px; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.32); border-radius: 999px; color: #fff; background: rgba(255,255,255,.08); cursor: pointer; font-size: 26px; }
     details { margin: 12px 0; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     summary { cursor: pointer; color: var(--green-2); font-family: var(--sans); font-weight: 800; }
-    @media (max-width: 1180px) { .layout { display: block; } .toc, .notes { display: none; } .mobile-nav { display: flex; } }
-    @media (max-width: 720px) { body { font-size: 16px; } .hero { padding: 72px 20px 28px; } .module-grid, .formula-grid, .page-grid { grid-template-columns: 1fr; } .metric-table { display: block; overflow-x: auto; font-size: 13px; } }
+    details p { margin: 12px 0 0; }
+    .interactive-fallback { padding: 13px 15px; border-left: 3px solid var(--gold); color: #5d4b26; background: #fff9eb; }
+    @media (max-width: 1199px) {
+      .layout { display: block; }
+      .compact-bar { position: sticky; top: 0; z-index: 30; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; min-height: var(--toolbar-h); padding: 8px 12px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(14px); font-family: var(--sans); }
+      .compact-bar strong { overflow: hidden; padding: 0 12px; color: var(--green-2); font-size: 13px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+      .compact-action, .drawer-close { min-height: 36px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 999px; color: var(--green-2); background: var(--paper); cursor: pointer; font-family: var(--sans); font-size: 12px; font-weight: 800; }
+      .toc, .notes { position: fixed; top: 0; bottom: 0; z-index: 60; width: min(340px, calc(100vw - 64px)); height: 100vh; visibility: hidden; background: rgba(255,255,255,.98); box-shadow: 0 20px 60px rgba(17,37,29,.22); transition: transform .2s ease, visibility .2s ease; }
+      .toc { left: 0; padding-top: 64px; transform: translateX(-102%); }
+      .notes { right: 0; padding-top: 64px; transform: translateX(102%); }
+      .toc.open, .notes.open { visibility: visible; transform: translateX(0); }
+      .drawer-close { position: absolute; top: 14px; right: 16px; display: inline-flex; align-items: center; }
+      .drawer-scrim { position: fixed; inset: 0; z-index: 50; display: block; visibility: hidden; border: 0; opacity: 0; background: rgba(11,25,19,.46); cursor: pointer; transition: opacity .2s ease, visibility .2s ease; }
+      .drawer-scrim.open { visibility: visible; opacity: 1; }
+      .hero { min-height: 44vh; padding: 48px clamp(28px, 7vw, 64px); }
+      .content { max-width: 900px; padding: 32px clamp(28px, 6vw, 52px) 72px; }
+      section { scroll-margin-top: calc(var(--toolbar-h) + 20px); }
+      .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric-table { min-width: 680px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .toc, .notes, .drawer-scrim { transition: none; }
+    }
   </style>
 </head>
 <body>
   <div class="layout">
-    <aside class="toc" aria-label="Table of contents">
+    <aside class="toc" id="tocPanel" aria-label="Table of contents">
+      <button class="drawer-close" type="button" data-drawer-close aria-label="關閉目錄">關閉</button>
       <div class="brand"><strong>{{SHORT_NAME}}</strong><span>{{PAPER_ID}}</span></div>
       <ul class="toc-list">
-        <li><a class="toc-link active" data-section-link href="#why"><b>01</b><span>問題</span></a></li>
-        <li><a class="toc-link" data-section-link href="#idea"><b>02</b><span>全貌</span></a></li>
-        <li><a class="toc-link" data-section-link href="#method"><b>03</b><span>方法</span></a></li>
-        <li><a class="toc-link" data-section-link href="#io"><b>04</b><span>定義</span></a></li>
-        <li><a class="toc-link" data-section-link href="#arch"><b>05</b><span>架構</span></a></li>
-        <li><a class="toc-link" data-section-link href="#heads"><b>06</b><span>Heads</span></a></li>
-        <li><a class="toc-link" data-section-link href="#coord"><b>07</b><span>座標</span></a></li>
-        <li><a class="toc-link" data-section-link href="#train"><b>08</b><span>訓練</span></a></li>
-        <li><a class="toc-link" data-section-link href="#metrics"><b>09</b><span>指標</span></a></li>
-        <li><a class="toc-link" data-section-link href="#exp"><b>10</b><span>實驗</span></a></li>
-        <li><a class="toc-link" data-section-link href="#ablate"><b>11</b><span>消融</span></a></li>
-        <li><a class="toc-link" data-section-link href="#runtime"><b>12</b><span>開銷</span></a></li>
-        <li><a class="toc-link" data-section-link href="#limit"><b>13</b><span>限制</span></a></li>
-        <li><a class="toc-link" data-section-link href="#appendix"><b>14</b><span>附錄</span></a></li>
-        <li><a class="toc-link" data-section-link href="#figures"><b>15</b><span>圖表</span></a></li>
-        <li><a class="toc-link" data-section-link href="#discussion"><b>16</b><span>討論</span></a></li>
+        <li><a class="toc-link active" data-section-link href="#overview"><b>01</b><span>概覽</span></a></li>
+        <li><a class="toc-link" data-section-link href="#context"><b>02</b><span>背景</span></a></li>
+        <li><a class="toc-link" data-section-link href="#problem"><b>03</b><span>問題</span></a></li>
+        <li><a class="toc-link" data-section-link href="#approach"><b>04</b><span>方法</span></a></li>
+        <li><a class="toc-link" data-section-link href="#setup"><b>05</b><span>設定</span></a></li>
+        <li><a class="toc-link" data-section-link href="#results"><b>06</b><span>結果</span></a></li>
+        <li><a class="toc-link" data-section-link href="#discussion"><b>07</b><span>討論</span></a></li>
+        <li><a class="toc-link" data-section-link href="#conclusion"><b>08</b><span>結論</span></a></li>
       </ul>
     </aside>
 
     <main>
-      <nav class="mobile-nav" aria-label="Mobile navigation">
-        <a data-section-link class="active" href="#why">問題</a><a data-section-link href="#idea">全貌</a><a data-section-link href="#method">方法</a><a data-section-link href="#io">定義</a><a data-section-link href="#arch">架構</a><a data-section-link href="#heads">Heads</a><a data-section-link href="#coord">座標</a><a data-section-link href="#train">訓練</a><a data-section-link href="#metrics">指標</a><a data-section-link href="#exp">實驗</a><a data-section-link href="#ablate">消融</a><a data-section-link href="#runtime">開銷</a><a data-section-link href="#limit">限制</a><a data-section-link href="#appendix">附錄</a><a data-section-link href="#figures">圖表</a><a data-section-link href="#discussion">討論</a>
-      </nav>
-      <header class="hero"><div class="hero-inner"><div class="kicker">{{PAPER_ID}}</div><h1>{{TITLE}}</h1><p>{{THESIS}}</p></div></header>
+      <div class="compact-bar" aria-label="閱讀工具列">
+        <button class="compact-action" type="button" data-drawer-open="toc" aria-controls="tocPanel" aria-expanded="false">目錄</button>
+        <strong id="compactTitle">概覽</strong>
+        <button class="compact-action" type="button" data-drawer-open="notes" aria-controls="notesPanel" aria-expanded="false">附註</button>
+      </div>
+      <header class="hero"><div class="hero-inner"><div class="kicker">{{PAPER_ID}}</div><h1>{{TITLE}}</h1></div></header>
 
       <div class="content">
-        <section id="why" data-title="問題"><h2>為何需要這個方法</h2><p class="lead">{{WHY_CONTENT}}</p><div class="ref-row"><span class="ref">{{WHY_REF}}</span></div></section>
-        <section id="idea" data-title="全貌"><h2>核心想法</h2><div class="panel">{{IDEA_CONTENT}}</div></section>
-        <section id="method" data-title="方法"><h2>方法流程</h2><ol class="method-steps"><li><b>{{STEP_1}}</b><span>{{STEP_1_TEXT}}</span></li><li><b>{{STEP_2}}</b><span>{{STEP_2_TEXT}}</span></li><li><b>{{STEP_3}}</b><span>{{STEP_3_TEXT}}</span></li><li><b>{{STEP_4}}</b><span>{{STEP_4_TEXT}}</span></li></ol><div class="equation tex2jax_process"><span class="equation-title">{{EQ1_LABEL}}</span><span class="formula-fallback">{{EQ1_FALLBACK}}</span><span class="mathjax-formula">$$ {{EQ1_BODY}} $$</span></div></section>
-        <section id="io" data-title="定義"><h2>輸入與輸出</h2><div class="module-grid"><article class="module-card"><h3>Input</h3><p>{{INPUT_CONTENT}}</p></article><article class="module-card"><h3>Output</h3><p>{{OUTPUT_CONTENT}}</p></article><article class="module-card"><h3>Dimensions</h3><p>{{DIMENSIONS_CONTENT}}</p></article></div></section>
-        <section id="arch" data-title="架構"><h2>模型架構</h2><div class="module-grid"><article class="module-card"><h3>{{MODULE_1}}</h3><p>{{MODULE_1_TEXT}}</p></article><article class="module-card"><h3>{{MODULE_2}}</h3><p>{{MODULE_2_TEXT}}</p></article><article class="module-card"><h3>{{MODULE_3}}</h3><p>{{MODULE_3_TEXT}}</p></article></div></section>
-        <section id="heads" data-title="Heads"><h2>Prediction Heads</h2><div class="panel">{{HEADS_CONTENT}}</div></section>
-        <section id="coord" data-title="座標"><h2>座標與幾何</h2><div class="panel">{{COORD_CONTENT}}</div></section>
-        <section id="train" data-title="訓練"><h2>訓練設定</h2><div class="formula-grid"><div class="formula-card"><b>{{LOSS_1}}</b><span>{{LOSS_1_TEXT}}</span></div><div class="formula-card"><b>{{LOSS_2}}</b><span>{{LOSS_2_TEXT}}</span></div></div><div class="panel">{{TRAIN_CONTENT}}</div></section>
-        <section id="metrics" data-title="指標"><h2>評估指標</h2><div class="formula-grid"><div class="formula-card"><b>{{METRIC_1}}</b><span>{{METRIC_1_TEXT}}</span></div><div class="formula-card"><b>{{METRIC_2}}</b><span>{{METRIC_2_TEXT}}</span></div></div></section>
-        <section id="exp" data-title="實驗"><h2>實驗結果</h2><table class="metric-table"><caption>{{TABLE_CAPTION}}</caption><thead><tr><th scope="col">Method</th><th scope="col">Metric</th><th scope="col">Reading note</th></tr></thead><tbody><tr><td>{{BASELINE}}</td><td>{{BASELINE_SCORE}}</td><td>{{BASELINE_NOTE}}</td></tr><tr><td>{{OURS}} <span class="best">best</span></td><td>{{OURS_SCORE}}</td><td>{{OURS_NOTE}}</td></tr></tbody></table><p>{{EXP_NOTE}}</p></section>
-        <section id="ablate" data-title="消融"><h2>消融分析</h2><div class="panel">{{ABLATION_CONTENT}}</div></section>
-        <section id="runtime" data-title="開銷"><h2>Runtime 與成本</h2><div class="panel">{{RUNTIME_CONTENT}}</div></section>
-        <section id="limit" data-title="限制"><h2>限制與風險</h2><div class="panel">{{LIMIT_CONTENT}}</div></section>
-        <section id="appendix" data-title="附錄"><h2>附錄細節</h2><div class="panel">{{APPENDIX_CONTENT}}</div></section>
-        <section id="figures" data-title="圖表"><h2>圖表導覽</h2><div class="page-grid"><article class="page-card"><img src="{{FIG1_IMAGE}}" alt="{{FIG1_LABEL}}" data-zoom tabindex="0" role="button"><div class="page-pad"><h3>{{FIG1_LABEL}}</h3><p>{{FIG1_TEXT}}</p></div></article><article class="page-card"><img src="{{FIG2_IMAGE}}" alt="{{FIG2_LABEL}}" data-zoom tabindex="0" role="button"><div class="page-pad"><h3>{{FIG2_LABEL}}</h3><p>{{FIG2_TEXT}}</p></div></article></div></section>
-        <section id="discussion" data-title="討論"><h2>研究討論</h2><details open><summary>{{QUESTION_1}}</summary><p>{{ANSWER_1}}</p></details><details><summary>{{QUESTION_2}}</summary><p>{{ANSWER_2}}</p></details></section>
+        <div class="depth-control" role="group" aria-label="閱讀深度"><strong>閱讀深度</strong><div class="depth-presets"><button class="depth-preset" type="button" data-depth-preset="overview" aria-pressed="true">概覽</button><button class="depth-preset" type="button" data-depth-preset="study" aria-pressed="false">研讀</button><button class="depth-preset" type="button" data-depth-preset="deep" aria-pressed="false">深入</button></div></div>
+
+        <section id="overview" data-title="概覽"><h2>論文概覽</h2><p class="section-intro">{{OVERVIEW_CONTEXT}}</p><p class="section-intro">{{OVERVIEW_METHOD}}</p><details data-depth="study"><summary>研讀：證據鏈與貢獻</summary><p>{{OVERVIEW_EVIDENCE}}</p></details><details data-depth="deep"><summary>深入：證據邊界與限制</summary><p>{{OVERVIEW_BOUNDARY}}</p></details></section>
+        <section id="context" data-title="背景"><h2>背景與研究定位</h2><p class="section-intro">{{CONTEXT_INTRO}}</p><details data-depth="study"><summary>研讀：相關工作類型</summary><p>{{CONTEXT_RELATED}}</p></details><details data-depth="deep"><summary>深入：現有方法限制與本文定位</summary><p>{{CONTEXT_LIMITS}}</p></details></section>
+        <section id="problem" data-title="問題"><h2>問題定義</h2><p class="section-intro">{{PROBLEM_INTRO}}</p><div class="panel reading-panel"><p>{{PROBLEM_TASK}}</p><p>{{PROBLEM_IO}}</p></div><details data-depth="study"><summary>研讀：notation、目標與假設</summary><p>{{PROBLEM_NOTATION}}</p></details><details data-depth="deep"><summary>深入：範圍與約束</summary><p>{{PROBLEM_CONSTRAINTS}}</p></details></section>
+        <section id="approach" data-title="方法"><h2>方法與系統設計</h2><p class="section-intro">{{APPROACH_INTRO}}</p><ol class="method-steps"><li><strong>{{STEP_1}}</strong><p>{{STEP_1_TEXT}}</p></li><li><strong>{{STEP_2}}</strong><p>{{STEP_2_TEXT}}</p></li><li><strong>{{STEP_3}}</strong><p>{{STEP_3_TEXT}}</p></li><li><strong>{{STEP_4}}</strong><p>{{STEP_4_TEXT}}</p></li></ol><div class="equation tex2jax_process"><span class="equation-title">{{EQ1_LABEL}}</span><span class="formula-fallback">{{EQ1_FALLBACK}}</span><span class="mathjax-formula">$$ {{EQ1_BODY}} $$</span><p>{{EQ1_EXPLANATION}}</p><div class="ref-row"><span class="ref formula">{{EQ1_SOURCE}}</span></div></div><figure class="figure"><img src="{{APPROACH_FIGURE_IMAGE}}" alt="{{APPROACH_FIGURE_ALT}}" data-zoom tabindex="0" role="button"><figcaption><p>{{APPROACH_FIGURE_CAPTION}}</p><p>{{APPROACH_FIGURE_GUIDE}}</p></figcaption></figure><details data-depth="study"><summary>研讀：資料流與模組介面</summary><p>{{APPROACH_DATAFLOW}}</p></details><details data-depth="deep"><summary>深入：座標、推導與機制</summary><p>{{APPROACH_DERIVATION}}</p></details></section>
+        <section id="setup" data-title="設定"><h2>實作與驗證設計</h2><p class="section-intro">{{SETUP_INTRO}}</p><div class="panel reading-panel"><p>{{SETUP_DATA}}</p><p>{{SETUP_PREPROCESSING}}</p><p>{{SETUP_TRAINING}}</p><p>{{SETUP_IMPLEMENTATION}}</p><p>{{SETUP_METRICS}}</p><p>{{SETUP_HARDWARE}}</p><p>{{SETUP_SOFTWARE}}</p></div><details data-depth="study"><summary>研讀：baselines、metrics 與硬體</summary><p>{{SETUP_BASELINES}}</p></details><details data-depth="deep"><summary>深入：reproduction details 與未報告項目</summary><p>{{SETUP_REPRODUCTION}}</p></details></section>
+        <section id="results" data-title="結果"><h2>結果與分析</h2><p class="section-intro">{{RESULTS_INTRO}}</p><div class="panel reading-panel"><p>{{RESULTS_METRICS}}</p><p>{{RESULTS_MAIN}}</p></div><div class="table-scroll"><table class="metric-table"><caption>{{TABLE_CAPTION}}</caption><thead><tr><th scope="col">Method</th><th scope="col">Metric</th><th scope="col">Reading note</th></tr></thead><tbody><tr><td>{{BASELINE}}</td><td>{{BASELINE_SCORE}}</td><td>{{BASELINE_NOTE}}</td></tr><tr><td>{{OURS}} <span class="best">best</span></td><td>{{OURS_SCORE}}</td><td>{{OURS_NOTE}}</td></tr></tbody></table></div><figure class="figure"><img src="{{RESULTS_FIGURE_IMAGE}}" alt="{{RESULTS_FIGURE_ALT}}" data-zoom tabindex="0" role="button"><figcaption><p>{{RESULTS_FIGURE_CAPTION}}</p><p>{{RESULTS_FIGURE_GUIDE}}</p></figcaption></figure><details data-depth="study"><summary>研讀：比較與 ablation</summary><p>{{RESULTS_COMPARISON}}</p></details><details data-depth="deep"><summary>深入：runtime、complexity 與 error analysis</summary><p>{{RESULTS_ERROR_ANALYSIS}}</p></details></section>
+        <section id="discussion" data-title="討論"><h2>討論與限制</h2><p class="section-intro">{{DISCUSSION_INTRO}}</p><details data-depth="study"><summary>研讀：結果含義與 trade-off</summary><p>{{DISCUSSION_MEANING}}</p></details><details data-depth="deep"><summary>深入：validity、failure cases 與 generalizability</summary><p>{{DISCUSSION_LIMITS}}</p></details></section>
+        <section id="conclusion" data-title="結論"><h2>結論與延伸</h2><p class="section-intro">{{CONCLUSION_INTRO}}</p><details data-depth="study"><summary>研讀：證據支持的結論</summary><p>{{CONCLUSION_EVIDENCE}}</p></details><details data-depth="deep"><summary>深入：意涵與 future work</summary><p>{{CONCLUSION_FUTURE}}</p></details></section>
       </div>
     </main>
 
-    <aside class="notes" aria-label="Section notes"><p class="note-meta">附註</p><h2 id="noteTitle">問題</h2><div class="note-tabs"><button class="note-tab active" type="button" data-note-tab="terms">術語</button><button class="note-tab" type="button" data-note-tab="figs">圖表</button><button class="note-tab" type="button" data-note-tab="formula">公式</button></div><div class="note-body" id="noteBody"></div></aside>
+    <aside class="notes" id="notesPanel" aria-label="Section notes"><button class="drawer-close" type="button" data-drawer-close aria-label="關閉附註">關閉</button><p class="note-meta">附註</p><h2 id="noteTitle">概覽</h2><div class="note-tabs" role="tablist" aria-label="附註類型"><button class="note-tab active" type="button" role="tab" aria-selected="true" aria-controls="noteBody" data-note-tab="context">脈絡</button><button class="note-tab" type="button" role="tab" aria-selected="false" aria-controls="noteBody" data-note-tab="terms">詞彙</button><button class="note-tab" type="button" role="tab" aria-selected="false" aria-controls="noteBody" data-note-tab="evidence">證據</button><button class="note-tab" type="button" role="tab" aria-selected="false" aria-controls="noteBody" data-note-tab="review">複習</button></div><div class="note-body" id="noteBody" role="tabpanel"></div></aside>
   </div>
+
+  <button class="drawer-scrim" id="drawerScrim" type="button" tabindex="-1" aria-label="關閉側欄"></button>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Figure viewer"><button class="close" type="button" aria-label="Close image">×</button><img src="" alt=""></div>
 
@@ -179,19 +205,24 @@
   {
     "paper_id": "{{PAPER_ID}}",
     "language": "zh-Hant",
-    "section_order": ["why", "idea", "method", "io", "arch", "heads", "coord", "train", "metrics", "exp", "ablate", "runtime", "limit", "appendix", "figures", "discussion"],
+    "section_order": ["overview", "context", "problem", "approach", "setup", "results", "discussion", "conclusion"],
     "sections": {
-      "why": {"status": "unverified"}, "idea": {"status": "unverified"}, "method": {"status": "unverified"}, "io": {"status": "unverified"},
-      "arch": {"status": "unverified"}, "heads": {"status": "unverified"}, "coord": {"status": "unverified"}, "train": {"status": "unverified"},
-      "metrics": {"status": "unverified"}, "exp": {"status": "unverified"}, "ablate": {"status": "unverified"}, "runtime": {"status": "unverified"},
-      "limit": {"status": "unverified"}, "appendix": {"status": "unverified"}, "figures": {"status": "unverified"}, "discussion": {"status": "unverified"}
+      "overview": {"status": "unverified"}, "context": {"status": "unverified"}, "problem": {"status": "unverified"}, "approach": {"status": "unverified"},
+      "setup": {"status": "unverified"}, "results": {"status": "unverified"}, "discussion": {"status": "unverified"}, "conclusion": {"status": "unverified"}
     },
     "evidence": []
   }
   </script>
   <script id="notes-data" type="application/json">
   {
-    "why": {"terms": [], "figs": [], "formula": []}, "idea": {"terms": [], "figs": [], "formula": []}, "method": {"terms": [], "figs": [], "formula": []}, "io": {"terms": [], "figs": [], "formula": []}, "arch": {"terms": [], "figs": [], "formula": []}, "heads": {"terms": [], "figs": [], "formula": []}, "coord": {"terms": [], "figs": [], "formula": []}, "train": {"terms": [], "figs": [], "formula": []}, "metrics": {"terms": [], "figs": [], "formula": []}, "exp": {"terms": [], "figs": [], "formula": []}, "ablate": {"terms": [], "figs": [], "formula": []}, "runtime": {"terms": [], "figs": [], "formula": []}, "limit": {"terms": [], "figs": [], "formula": []}, "appendix": {"terms": [], "figs": [], "formula": []}, "figures": {"terms": [], "figs": [], "formula": []}, "discussion": {"terms": [], "figs": [], "formula": []}
+    "overview": {"context": [], "terms": [], "evidence": [], "review": []},
+    "context": {"context": [], "terms": [], "evidence": [], "review": []},
+    "problem": {"context": [], "terms": [], "evidence": [], "review": []},
+    "approach": {"context": [], "terms": [], "evidence": [], "review": []},
+    "setup": {"context": [], "terms": [], "evidence": [], "review": []},
+    "results": {"context": [], "terms": [], "evidence": [], "review": []},
+    "discussion": {"context": [], "terms": [], "evidence": [], "review": []},
+    "conclusion": {"context": [], "terms": [], "evidence": [], "review": []}
   }
   </script>
   <script>
@@ -201,52 +232,133 @@
     const noteTitle = document.getElementById("noteTitle");
     const noteBody = document.getElementById("noteBody");
     const noteTabs = Array.from(document.querySelectorAll(".note-tab"));
+    const compactTitle = document.getElementById("compactTitle");
+    const compactQuery = window.matchMedia("(max-width: 1199px)");
+    const drawerPanels = {toc: document.getElementById("tocPanel"), notes: document.getElementById("notesPanel")};
+    const drawerOpeners = Array.from(document.querySelectorAll("[data-drawer-open]"));
+    const drawerClosers = Array.from(document.querySelectorAll("[data-drawer-close]"));
+    const drawerScrim = document.getElementById("drawerScrim");
+    const guideMain = document.querySelector("main");
     const lightbox = document.getElementById("lightbox");
     const lightboxImg = lightbox.querySelector("img");
     const closeButton = lightbox.querySelector(".close");
-    let activeSection = "why";
-    let activeTab = "terms";
+    const depthPresets = Array.from(document.querySelectorAll("[data-depth-preset]"));
+    const depthDetails = Array.from(document.querySelectorAll("details[data-depth]"));
+    const depthStorageKey = "paper-navigator-depth";
+    let activeSection = "overview";
+    let activeTab = "context";
+    let activeDrawer = null;
+    let drawerOpener = null;
     let previousFocus = null;
 
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>\"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"}[char]));
     }
 
+    function applyDepthPreset(preset, remember = true) {
+      const value = ["overview", "study", "deep"].includes(preset) ? preset : "overview";
+      depthDetails.forEach(detail => {
+        detail.open = value === "deep" || (value === "study" && detail.dataset.depth === "study");
+      });
+      depthPresets.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.depthPreset === value)));
+      if (remember) {
+        try { window.localStorage.setItem(depthStorageKey, value); } catch (error) { /* direct-file storage may be unavailable */ }
+      }
+    }
+
     function renderNotes() {
       const items = (notes[activeSection] && notes[activeSection][activeTab]) || [];
       noteBody.innerHTML = items.length ? items.map(item => {
-        const title = escapeHtml(item.title || item[0] || "");
-        const body = escapeHtml(item.text || item.explanation || item[1] || "");
-        if (activeTab !== "formula") return `<div class="note-card"><b>${title}</b><span>${body}</span></div>`;
-        const formula = item.body || item[1] || "";
-        const fallback = escapeHtml(item.fallback || item.text || "");
-        return `<div class="note-card"><b>${title}</b><span class="formula-fallback">${fallback}</span><span class="note-eq mathjax-formula tex2jax_process">$$${formula}$$</span><span>${body}</span></div>`;
-      }).join("") : `<div class="note-card"><span>此段目前沒有額外附註。</span></div>`;
+        const record = item && typeof item === "object" ? item : {text: item};
+        const title = escapeHtml(record.title || record.label || record.term || record[0] || "");
+        const body = escapeHtml(record.text || record.explanation || record.description || record[1] || "");
+        if (activeTab === "context" || activeTab === "review") return `<article class="note-card"><p>${body}</p></article>`;
+        if (activeTab === "evidence") {
+          const refs = escapeHtml((record.refs || record.source_pages || record.sourcePage || "").toString());
+          return `<article class="note-card"><b>${title}</b><p>${body}</p>${refs ? `<span class="note-ref">${refs}</span>` : ""}</article>`;
+        }
+        return `<article class="note-card"><b>${title}</b><p>${body}</p></article>`;
+      }).join("") : `<div class="note-card"><p>此段目前沒有額外附註。</p></div>`;
       if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([noteBody]);
     }
 
     function setActive(id) {
       activeSection = id;
       const section = document.getElementById(id);
-      noteTitle.textContent = section ? section.dataset.title : "附註";
-      sectionLinks.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${id}`));
+      const title = section ? section.dataset.title : "附註";
+      noteTitle.textContent = title;
+      compactTitle.textContent = title;
+      sectionLinks.forEach(link => {
+        const isActive = link.getAttribute("href") === `#${id}`;
+        link.classList.toggle("active", isActive);
+        if (isActive) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      });
       renderNotes();
     }
 
+    function syncDrawers() {
+      const compact = compactQuery.matches;
+      Object.entries(drawerPanels).forEach(([name, panel]) => {
+        const isOpen = compact && activeDrawer === name;
+        panel.classList.toggle("open", isOpen);
+        panel.inert = compact && !isOpen;
+        if (compact) panel.setAttribute("aria-hidden", String(!isOpen));
+        else panel.removeAttribute("aria-hidden");
+      });
+      const hasOpenDrawer = compact && Boolean(activeDrawer);
+      drawerScrim.classList.toggle("open", hasOpenDrawer);
+      document.body.classList.toggle("drawer-open", hasOpenDrawer);
+      guideMain.inert = hasOpenDrawer;
+      drawerOpeners.forEach(button => button.setAttribute("aria-expanded", String(hasOpenDrawer && button.dataset.drawerOpen === activeDrawer)));
+    }
+
+    function closeDrawers(restoreFocus = true) {
+      const returnTarget = drawerOpener;
+      activeDrawer = null;
+      drawerOpener = null;
+      syncDrawers();
+      if (restoreFocus && returnTarget) requestAnimationFrame(() => returnTarget.focus());
+    }
+
+    function openDrawer(name, opener) {
+      if (!compactQuery.matches || !drawerPanels[name]) return;
+      if (activeDrawer === name) { closeDrawers(); return; }
+      activeDrawer = name;
+      drawerOpener = opener;
+      syncDrawers();
+      const focusTarget = drawerPanels[name].querySelector("[data-drawer-close]");
+      if (focusTarget) requestAnimationFrame(() => requestAnimationFrame(() => focusTarget.focus()));
+    }
+
     const sectionObserver = new IntersectionObserver(entries => {
+      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+        setActive(sections[sections.length - 1].id);
+        return;
+      }
       const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setActive(visible.target.id);
     }, {rootMargin: "-18% 0px -62% 0px", threshold: [0, .2, .5, .8]});
     sections.forEach(section => sectionObserver.observe(section));
-    setActive("why");
-    noteTabs.forEach(tab => tab.addEventListener("click", () => { activeTab = tab.dataset.noteTab; noteTabs.forEach(item => item.classList.toggle("active", item === tab)); renderNotes(); }));
+    depthPresets.forEach(button => button.addEventListener("click", () => applyDepthPreset(button.dataset.depthPreset)));
+    let savedDepth = "overview";
+    try { savedDepth = window.localStorage.getItem(depthStorageKey) || savedDepth; } catch (error) { /* direct-file storage may be unavailable */ }
+    applyDepthPreset(savedDepth, false);
+    setActive("overview");
+    noteTabs.forEach(tab => tab.addEventListener("click", () => { activeTab = tab.dataset.noteTab; noteTabs.forEach(item => { const isActive = item === tab; item.classList.toggle("active", isActive); item.setAttribute("aria-selected", String(isActive)); }); renderNotes(); }));
+    drawerOpeners.forEach(button => button.addEventListener("click", () => openDrawer(button.dataset.drawerOpen, button)));
+    drawerClosers.forEach(button => button.addEventListener("click", () => closeDrawers()));
+    drawerScrim.addEventListener("click", () => closeDrawers());
+    sectionLinks.forEach(link => link.addEventListener("click", () => { if (compactQuery.matches) closeDrawers(); }));
+    compactQuery.addEventListener("change", () => { activeDrawer = null; drawerOpener = null; syncDrawers(); });
+    syncDrawers();
 
     function openLightbox(img) { previousFocus = document.activeElement; lightboxImg.src = img.currentSrc || img.src; lightboxImg.alt = img.alt; lightbox.classList.add("open"); lightbox.setAttribute("aria-hidden", "false"); closeButton.focus(); }
     function closeLightbox() { lightbox.classList.remove("open"); lightbox.setAttribute("aria-hidden", "true"); lightboxImg.src = ""; if (previousFocus) previousFocus.focus(); }
     document.querySelectorAll("[data-zoom]").forEach(img => { img.addEventListener("click", () => openLightbox(img)); img.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openLightbox(img); } }); });
     closeButton.addEventListener("click", closeLightbox);
     lightbox.addEventListener("click", event => { if (event.target === lightbox) closeLightbox(); });
-    window.addEventListener("keydown", event => { if (event.key === "Escape" && lightbox.classList.contains("open")) closeLightbox(); });
+    window.addEventListener("keydown", event => { if (event.key !== "Escape") return; if (lightbox.classList.contains("open")) closeLightbox(); else if (activeDrawer) closeDrawers(); });
     if (window.MathJax && MathJax.startup && MathJax.startup.promise) MathJax.startup.promise.then(() => { document.body.classList.add("mathjax-ready"); renderNotes(); });
   </script>
 </body>
