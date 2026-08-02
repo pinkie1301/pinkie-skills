@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-Hant" data-guide-profile="desktop-first">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --bg: #f7f8f4;
+      --paper: #fff;
+      --ink: #18201d;
+      --muted: #5b6862;
+      --line: #dfe5df;
+      --green: #28664f;
+      --green-2: #174333;
+      --blue: #276b8f;
+      --rose: #a94951;
+      --gold: #b58734;
+      --soft: #eef5f1;
+      --soft-blue: #edf5f8;
+      --soft-rose: #fbf0f1;
+      --radius: 8px;
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --serif: Georgia, "Times New Roman", "Noto Serif TC", serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--bg); font-family: var(--serif); font-size: 17px; line-height: 1.78; }
+    body.mathjax-ready .formula-fallback { display: none; }
+    .mathjax-formula { display: none; overflow-x: auto; }
+    body.mathjax-ready .mathjax-formula { display: block; }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    .layout { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr) 300px; }
+    .toc, .notes { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: rgba(255,255,255,.84); backdrop-filter: blur(14px); font-family: var(--sans); }
+    .toc { padding: 24px 18px; border-right: 1px solid var(--line); }
+    .notes { padding: 24px 20px; border-left: 1px solid var(--line); }
+    .brand { display: grid; gap: 5px; margin-bottom: 20px; }
+    .brand strong { color: var(--green-2); font-size: 15px; letter-spacing: .05em; text-transform: uppercase; }
+    .brand span, .note-meta { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .toc-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+    .toc-link { display: grid; grid-template-columns: 28px 1fr; align-items: center; min-height: 38px; padding: 7px 9px; border-radius: var(--radius); color: #435049; transition: background .18s ease, color .18s ease; }
+    .toc-link:hover, .toc-link.active { color: var(--green-2); background: var(--soft); }
+    .toc-link b { font-family: var(--mono); font-size: 11px; color: var(--gold); }
+    .toc-link span { font-size: 13px; font-weight: 700; }
+    .mobile-nav { display: none; position: sticky; top: 0; z-index: 20; gap: 8px; overflow-x: auto; padding: 10px 12px; background: rgba(255,255,255,.94); border-bottom: 1px solid var(--line); font-family: var(--sans); }
+    .mobile-nav a { flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; color: #435049; font-size: 13px; background: var(--paper); }
+    .mobile-nav a.active { color: var(--green-2); border-color: rgba(40,102,79,.36); background: var(--soft); }
+    .hero { min-height: 48vh; display: grid; align-items: end; padding: clamp(28px, 6vw, 74px); color: #fff; background: linear-gradient(180deg, rgba(15,35,28,.22), rgba(15,35,28,.88)), url("{{HERO_IMAGE}}") center / cover; }
+    .hero-inner { max-width: 920px; }
+    .kicker { display: inline-flex; gap: 10px; margin-bottom: 16px; font-family: var(--sans); font-size: 13px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: #e4f2ea; }
+    .kicker::before { content: ""; width: 32px; height: 2px; margin-top: .7em; background: #e5c16e; }
+    h1 { margin: 0 0 18px; font-size: clamp(38px, 6vw, 70px); line-height: 1.04; }
+    .hero p { max-width: 760px; margin: 0; color: rgba(255,255,255,.9); font-size: clamp(18px, 2vw, 23px); }
+    .content { max-width: 1040px; margin: 0 auto; padding: 38px clamp(18px, 4vw, 54px) 72px; }
+    section { scroll-margin-top: 28px; padding: 44px 0; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0 0 18px; color: var(--green-2); font-size: clamp(28px, 4vw, 42px); line-height: 1.16; }
+    h3 { margin: 26px 0 10px; color: #26362f; font-size: 22px; line-height: 1.25; }
+    p { margin: 0 0 16px; }
+    .lead { color: #3e4b45; font-size: 19px; }
+    .ref-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 20px; font-family: var(--sans); }
+    .ref { display: inline-flex; min-height: 28px; align-items: center; padding: 4px 8px; border: 1px solid rgba(39,107,143,.22); border-radius: 999px; color: #17465d; background: var(--soft-blue); font-size: 12px; font-weight: 800; }
+    .ref.table { border-color: rgba(181,135,52,.28); color: #664812; background: #fff8e8; }
+    .ref.formula { border-color: rgba(169,73,81,.24); color: #7b2c33; background: var(--soft-rose); }
+    .panel, .module-card, .formula-card, .note-card, .page-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .panel, .module-card, .formula-card { padding: 16px; }
+    .module-grid, .formula-grid, .page-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+    .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .module-card h3, .page-card h3 { margin-top: 0; font-family: var(--sans); color: var(--green-2); font-size: 16px; }
+    .module-card p, .page-card p, .formula-card span { color: var(--muted); font-family: var(--sans); font-size: 13px; line-height: 1.55; }
+    .method-steps { counter-reset: step; display: grid; gap: 12px; margin: 22px 0; padding: 0; list-style: none; font-family: var(--sans); }
+    .method-steps li { position: relative; padding: 15px 16px 15px 54px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .method-steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 14px; top: 16px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 999px; color: #fff; background: var(--green); font-size: 12px; font-weight: 900; }
+    .method-steps b { display: block; margin-bottom: 4px; color: #25362f; font-size: 14px; }
+    .method-steps span { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .equation { margin: 20px 0; padding: 18px; border: 1px solid rgba(39,107,143,.22); border-radius: var(--radius); background: #fbfdfd; overflow-x: auto; }
+    .equation-title { display: block; margin-bottom: 10px; color: #17465d; font-family: var(--sans); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .formula-fallback { color: #24342d; font-family: var(--mono); font-size: 14px; overflow-x: auto; }
+    .metric-table { width: 100%; margin: 22px 0; border-collapse: collapse; border: 1px solid var(--line); background: var(--paper); font-family: var(--sans); font-size: 14px; }
+    .metric-table th, .metric-table td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .metric-table th { color: var(--green-2); background: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .best { display: inline-flex; padding: 2px 7px; border-radius: 999px; color: #164432; background: #dff1e8; font-size: 11px; font-weight: 900; }
+    .figure { margin: 28px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); overflow: hidden; }
+    .figure img { width: 100%; max-height: 820px; object-fit: contain; background: #f3f5f1; cursor: zoom-in; }
+    figcaption { padding: 13px 16px 16px; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--sans); font-size: 13px; line-height: 1.55; }
+    .page-card { overflow: hidden; font-family: var(--sans); }
+    .page-card img { width: 100%; aspect-ratio: 1.55; object-fit: cover; object-position: top center; cursor: zoom-in; background: #f3f5f1; }
+    .page-pad { padding: 13px; }
+    .note-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+    .note-tab { min-height: 30px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 800; }
+    .note-tab.active { color: var(--green-2); background: var(--soft); border-color: rgba(40,102,79,.36); }
+    .note-body { display: grid; gap: 10px; margin-top: 18px; }
+    .note-card { padding: 13px; }
+    .note-card b { display: block; margin-bottom: 5px; color: #22352d; font-family: var(--sans); font-size: 13px; }
+    .note-card span { color: var(--muted); font-family: var(--sans); font-size: 12px; line-height: 1.5; }
+    .note-card .note-eq { display: block; margin: 7px 0; padding: 8px; border-radius: 6px; color: #24342d; background: #f4f6f3; font-family: var(--serif); overflow-x: auto; }
+    .lightbox { position: fixed; inset: 0; z-index: 99; display: none; align-items: center; justify-content: center; padding: 28px; background: rgba(8,16,13,.88); }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: min(96vw, 1400px); max-height: 86vh; border-radius: var(--radius); background: #fff; }
+    .close { position: fixed; top: 18px; right: 18px; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.32); border-radius: 999px; color: #fff; background: rgba(255,255,255,.08); cursor: pointer; font-size: 26px; }
+    details { margin: 12px 0; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    summary { cursor: pointer; color: var(--green-2); font-family: var(--sans); font-weight: 800; }
+    @media (max-width: 1180px) { .layout { display: block; } .toc, .notes { display: none; } .mobile-nav { display: flex; } }
+    @media (max-width: 720px) { body { font-size: 16px; } .hero { padding: 72px 20px 28px; } .module-grid, .formula-grid, .page-grid { grid-template-columns: 1fr; } .metric-table { display: block; overflow-x: auto; font-size: 13px; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="toc" aria-label="Table of contents">
+      <div class="brand"><strong>{{SHORT_NAME}}</strong><span>{{PAPER_ID}}</span></div>
+      <ul class="toc-list">
+        <li><a class="toc-link active" data-section-link href="#why"><b>01</b><span>問題</span></a></li>
+        <li><a class="toc-link" data-section-link href="#idea"><b>02</b><span>全貌</span></a></li>
+        <li><a class="toc-link" data-section-link href="#method"><b>03</b><span>方法</span></a></li>
+        <li><a class="toc-link" data-section-link href="#io"><b>04</b><span>定義</span></a></li>
+        <li><a class="toc-link" data-section-link href="#arch"><b>05</b><span>架構</span></a></li>
+        <li><a class="toc-link" data-section-link href="#heads"><b>06</b><span>Heads</span></a></li>
+        <li><a class="toc-link" data-section-link href="#coord"><b>07</b><span>座標</span></a></li>
+        <li><a class="toc-link" data-section-link href="#train"><b>08</b><span>訓練</span></a></li>
+        <li><a class="toc-link" data-section-link href="#metrics"><b>09</b><span>指標</span></a></li>
+        <li><a class="toc-link" data-section-link href="#exp"><b>10</b><span>實驗</span></a></li>
+        <li><a class="toc-link" data-section-link href="#ablate"><b>11</b><span>消融</span></a></li>
+        <li><a class="toc-link" data-section-link href="#runtime"><b>12</b><span>開銷</span></a></li>
+        <li><a class="toc-link" data-section-link href="#limit"><b>13</b><span>限制</span></a></li>
+        <li><a class="toc-link" data-section-link href="#appendix"><b>14</b><span>附錄</span></a></li>
+        <li><a class="toc-link" data-section-link href="#figures"><b>15</b><span>圖表</span></a></li>
+        <li><a class="toc-link" data-section-link href="#discussion"><b>16</b><span>討論</span></a></li>
+      </ul>
+    </aside>
+
+    <main>
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a data-section-link class="active" href="#why">問題</a><a data-section-link href="#idea">全貌</a><a data-section-link href="#method">方法</a><a data-section-link href="#io">定義</a><a data-section-link href="#arch">架構</a><a data-section-link href="#heads">Heads</a><a data-section-link href="#coord">座標</a><a data-section-link href="#train">訓練</a><a data-section-link href="#metrics">指標</a><a data-section-link href="#exp">實驗</a><a data-section-link href="#ablate">消融</a><a data-section-link href="#runtime">開銷</a><a data-section-link href="#limit">限制</a><a data-section-link href="#appendix">附錄</a><a data-section-link href="#figures">圖表</a><a data-section-link href="#discussion">討論</a>
+      </nav>
+      <header class="hero"><div class="hero-inner"><div class="kicker">{{PAPER_ID}}</div><h1>{{TITLE}}</h1><p>{{THESIS}}</p></div></header>
+
+      <div class="content">
+        <section id="why" data-title="問題"><h2>為何需要這個方法</h2><p class="lead">{{WHY_CONTENT}}</p><div class="ref-row"><span class="ref">{{WHY_REF}}</span></div></section>
+        <section id="idea" data-title="全貌"><h2>核心想法</h2><div class="panel">{{IDEA_CONTENT}}</div></section>
+        <section id="method" data-title="方法"><h2>方法流程</h2><ol class="method-steps"><li><b>{{STEP_1}}</b><span>{{STEP_1_TEXT}}</span></li><li><b>{{STEP_2}}</b><span>{{STEP_2_TEXT}}</span></li><li><b>{{STEP_3}}</b><span>{{STEP_3_TEXT}}</span></li><li><b>{{STEP_4}}</b><span>{{STEP_4_TEXT}}</span></li></ol><div class="equation tex2jax_process"><span class="equation-title">{{EQ1_LABEL}}</span><span class="formula-fallback">{{EQ1_FALLBACK}}</span><span class="mathjax-formula">$$ {{EQ1_BODY}} $$</span></div></section>
+        <section id="io" data-title="定義"><h2>輸入與輸出</h2><div class="module-grid"><article class="module-card"><h3>Input</h3><p>{{INPUT_CONTENT}}</p></article><article class="module-card"><h3>Output</h3><p>{{OUTPUT_CONTENT}}</p></article><article class="module-card"><h3>Dimensions</h3><p>{{DIMENSIONS_CONTENT}}</p></article></div></section>
+        <section id="arch" data-title="架構"><h2>模型架構</h2><div class="module-grid"><article class="module-card"><h3>{{MODULE_1}}</h3><p>{{MODULE_1_TEXT}}</p></article><article class="module-card"><h3>{{MODULE_2}}</h3><p>{{MODULE_2_TEXT}}</p></article><article class="module-card"><h3>{{MODULE_3}}</h3><p>{{MODULE_3_TEXT}}</p></article></div></section>
+        <section id="heads" data-title="Heads"><h2>Prediction Heads</h2><div class="panel">{{HEADS_CONTENT}}</div></section>
+        <section id="coord" data-title="座標"><h2>座標與幾何</h2><div class="panel">{{COORD_CONTENT}}</div></section>
+        <section id="train" data-title="訓練"><h2>訓練設定</h2><div class="formula-grid"><div class="formula-card"><b>{{LOSS_1}}</b><span>{{LOSS_1_TEXT}}</span></div><div class="formula-card"><b>{{LOSS_2}}</b><span>{{LOSS_2_TEXT}}</span></div></div><div class="panel">{{TRAIN_CONTENT}}</div></section>
+        <section id="metrics" data-title="指標"><h2>評估指標</h2><div class="formula-grid"><div class="formula-card"><b>{{METRIC_1}}</b><span>{{METRIC_1_TEXT}}</span></div><div class="formula-card"><b>{{METRIC_2}}</b><span>{{METRIC_2_TEXT}}</span></div></div></section>
+        <section id="exp" data-title="實驗"><h2>實驗結果</h2><table class="metric-table"><caption>{{TABLE_CAPTION}}</caption><thead><tr><th scope="col">Method</th><th scope="col">Metric</th><th scope="col">Reading note</th></tr></thead><tbody><tr><td>{{BASELINE}}</td><td>{{BASELINE_SCORE}}</td><td>{{BASELINE_NOTE}}</td></tr><tr><td>{{OURS}} <span class="best">best</span></td><td>{{OURS_SCORE}}</td><td>{{OURS_NOTE}}</td></tr></tbody></table><p>{{EXP_NOTE}}</p></section>
+        <section id="ablate" data-title="消融"><h2>消融分析</h2><div class="panel">{{ABLATION_CONTENT}}</div></section>
+        <section id="runtime" data-title="開銷"><h2>Runtime 與成本</h2><div class="panel">{{RUNTIME_CONTENT}}</div></section>
+        <section id="limit" data-title="限制"><h2>限制與風險</h2><div class="panel">{{LIMIT_CONTENT}}</div></section>
+        <section id="appendix" data-title="附錄"><h2>附錄細節</h2><div class="panel">{{APPENDIX_CONTENT}}</div></section>
+        <section id="figures" data-title="圖表"><h2>圖表導覽</h2><div class="page-grid"><article class="page-card"><img src="{{FIG1_IMAGE}}" alt="{{FIG1_LABEL}}" data-zoom tabindex="0" role="button"><div class="page-pad"><h3>{{FIG1_LABEL}}</h3><p>{{FIG1_TEXT}}</p></div></article><article class="page-card"><img src="{{FIG2_IMAGE}}" alt="{{FIG2_LABEL}}" data-zoom tabindex="0" role="button"><div class="page-pad"><h3>{{FIG2_LABEL}}</h3><p>{{FIG2_TEXT}}</p></div></article></div></section>
+        <section id="discussion" data-title="討論"><h2>研究討論</h2><details open><summary>{{QUESTION_1}}</summary><p>{{ANSWER_1}}</p></details><details><summary>{{QUESTION_2}}</summary><p>{{ANSWER_2}}</p></details></section>
+      </div>
+    </main>
+
+    <aside class="notes" aria-label="Section notes"><p class="note-meta">附註</p><h2 id="noteTitle">問題</h2><div class="note-tabs"><button class="note-tab active" type="button" data-note-tab="terms">術語</button><button class="note-tab" type="button" data-note-tab="figs">圖表</button><button class="note-tab" type="button" data-note-tab="formula">公式</button></div><div class="note-body" id="noteBody"></div></aside>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Figure viewer"><button class="close" type="button" aria-label="Close image">×</button><img src="" alt=""></div>
+
+  <script id="guide-manifest" type="application/json">
+  {
+    "paper_id": "{{PAPER_ID}}",
+    "language": "zh-Hant",
+    "section_order": ["why", "idea", "method", "io", "arch", "heads", "coord", "train", "metrics", "exp", "ablate", "runtime", "limit", "appendix", "figures", "discussion"],
+    "sections": {
+      "why": {"status": "unverified"}, "idea": {"status": "unverified"}, "method": {"status": "unverified"}, "io": {"status": "unverified"},
+      "arch": {"status": "unverified"}, "heads": {"status": "unverified"}, "coord": {"status": "unverified"}, "train": {"status": "unverified"},
+      "metrics": {"status": "unverified"}, "exp": {"status": "unverified"}, "ablate": {"status": "unverified"}, "runtime": {"status": "unverified"},
+      "limit": {"status": "unverified"}, "appendix": {"status": "unverified"}, "figures": {"status": "unverified"}, "discussion": {"status": "unverified"}
+    },
+    "evidence": []
+  }
+  </script>
+  <script id="notes-data" type="application/json">
+  {
+    "why": {"terms": [], "figs": [], "formula": []}, "idea": {"terms": [], "figs": [], "formula": []}, "method": {"terms": [], "figs": [], "formula": []}, "io": {"terms": [], "figs": [], "formula": []}, "arch": {"terms": [], "figs": [], "formula": []}, "heads": {"terms": [], "figs": [], "formula": []}, "coord": {"terms": [], "figs": [], "formula": []}, "train": {"terms": [], "figs": [], "formula": []}, "metrics": {"terms": [], "figs": [], "formula": []}, "exp": {"terms": [], "figs": [], "formula": []}, "ablate": {"terms": [], "figs": [], "formula": []}, "runtime": {"terms": [], "figs": [], "formula": []}, "limit": {"terms": [], "figs": [], "formula": []}, "appendix": {"terms": [], "figs": [], "formula": []}, "figures": {"terms": [], "figs": [], "formula": []}, "discussion": {"terms": [], "figs": [], "formula": []}
+  }
+  </script>
+  <script>
+    const notes = JSON.parse(document.getElementById("notes-data").textContent);
+    const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
+    const sections = Array.from(document.querySelectorAll("section"));
+    const noteTitle = document.getElementById("noteTitle");
+    const noteBody = document.getElementById("noteBody");
+    const noteTabs = Array.from(document.querySelectorAll(".note-tab"));
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = lightbox.querySelector("img");
+    const closeButton = lightbox.querySelector(".close");
+    let activeSection = "why";
+    let activeTab = "terms";
+    let previousFocus = null;
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>\"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"}[char]));
+    }
+
+    function renderNotes() {
+      const items = (notes[activeSection] && notes[activeSection][activeTab]) || [];
+      noteBody.innerHTML = items.length ? items.map(item => {
+        const title = escapeHtml(item.title || item[0] || "");
+        const body = escapeHtml(item.text || item.explanation || item[1] || "");
+        if (activeTab !== "formula") return `<div class="note-card"><b>${title}</b><span>${body}</span></div>`;
+        const formula = item.body || item[1] || "";
+        const fallback = escapeHtml(item.fallback || item.text || "");
+        return `<div class="note-card"><b>${title}</b><span class="formula-fallback">${fallback}</span><span class="note-eq mathjax-formula tex2jax_process">$$${formula}$$</span><span>${body}</span></div>`;
+      }).join("") : `<div class="note-card"><span>此段目前沒有額外附註。</span></div>`;
+      if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([noteBody]);
+    }
+
+    function setActive(id) {
+      activeSection = id;
+      const section = document.getElementById(id);
+      noteTitle.textContent = section ? section.dataset.title : "附註";
+      sectionLinks.forEach(link => link.classList.toggle("active", link.getAttribute("href") === `#${id}`));
+      renderNotes();
+    }
+
+    const sectionObserver = new IntersectionObserver(entries => {
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActive(visible.target.id);
+    }, {rootMargin: "-18% 0px -62% 0px", threshold: [0, .2, .5, .8]});
+    sections.forEach(section => sectionObserver.observe(section));
+    setActive("why");
+    noteTabs.forEach(tab => tab.addEventListener("click", () => { activeTab = tab.dataset.noteTab; noteTabs.forEach(item => item.classList.toggle("active", item === tab)); renderNotes(); }));
+
+    function openLightbox(img) { previousFocus = document.activeElement; lightboxImg.src = img.currentSrc || img.src; lightboxImg.alt = img.alt; lightbox.classList.add("open"); lightbox.setAttribute("aria-hidden", "false"); closeButton.focus(); }
+    function closeLightbox() { lightbox.classList.remove("open"); lightbox.setAttribute("aria-hidden", "true"); lightboxImg.src = ""; if (previousFocus) previousFocus.focus(); }
+    document.querySelectorAll("[data-zoom]").forEach(img => { img.addEventListener("click", () => openLightbox(img)); img.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openLightbox(img); } }); });
+    closeButton.addEventListener("click", closeLightbox);
+    lightbox.addEventListener("click", event => { if (event.target === lightbox) closeLightbox(); });
+    window.addEventListener("keydown", event => { if (event.key === "Escape" && lightbox.classList.contains("open")) closeLightbox(); });
+    if (window.MathJax && MathJax.startup && MathJax.startup.promise) MathJax.startup.promise.then(() => { document.body.classList.add("mathjax-ready"); renderNotes(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Node.js and frontend build output
+node_modules/
+dist/
+build/
+coverage/
+
+# Generated paper guide output
+paper-guide.html
+html_assets/
+guide-manifest.json
+paper-guide-manifest.json
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Editor and IDE settings
+.idea/
+.vscode/
