@@ -1,8 +1,15 @@
-# macOS
+# Only the paper-navigator skill and this file are tracked
+/*
+!/.gitignore
+!/skills/
+!/skills/paper-navigator/
+!/skills/paper-navigator/**
+
+# macOS and local files
 .DS_Store
 
-# Python
-__pycache__/
+# Python cache and test output
+**/__pycache__/
 *.py[cod]
 *.pyo
 .pytest_cache/
