@@ -88,6 +88,7 @@
     .ref { display: inline-flex; min-height: 28px; align-items: center; padding: 4px 8px; border: 1px solid rgba(39,107,143,.22); border-radius: 999px; color: #17465d; background: var(--soft-blue); font-size: 12px; font-weight: 800; }
     .ref.table { border-color: rgba(181,135,52,.28); color: #664812; background: #fff8e8; }
     .ref.formula { border-color: rgba(169,73,81,.24); color: #7b2c33; background: var(--soft-rose); }
+    .evidence-badge { display: inline-flex; min-height: 25px; align-items: center; margin-left: 7px; padding: 3px 8px; border: 1px solid rgba(39,107,143,.22); border-radius: 999px; color: #17465d; background: var(--soft-blue); font-family: var(--sans); font-size: 11px; font-weight: 900; }
     .panel, .module-card, .formula-card, .note-card, .page-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     .panel, .module-card, .formula-card { padding: 16px; }
     .module-grid, .formula-grid, .page-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
@@ -106,7 +107,6 @@
     .metric-table { width: 100%; margin: 0; border-collapse: collapse; border: 1px solid var(--line); background: var(--paper); font-family: var(--sans); font-size: 14px; }
     .metric-table th, .metric-table td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
     .metric-table th { color: var(--green-2); background: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-    .best { display: inline-flex; padding: 2px 7px; border-radius: 999px; color: #164432; background: #dff1e8; font-size: 11px; font-weight: 900; }
     .figure { margin: 28px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); overflow: hidden; }
     .figure img { width: 100%; max-height: 820px; object-fit: contain; background: #f3f5f1; cursor: zoom-in; }
     figcaption { padding: 13px 16px 16px; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--sans); font-size: 13px; line-height: 1.55; }
@@ -130,6 +130,9 @@
     details { margin: 12px 0; padding: 13px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
     summary { cursor: pointer; color: var(--green-2); font-family: var(--sans); font-weight: 800; }
     details p { margin: 12px 0 0; }
+    .coverage-notice { margin: 16px 0; padding: 15px 17px; border: 1px solid rgba(181,135,52,.32); border-left: 4px solid var(--gold); border-radius: var(--radius); color: #5d4b26; background: #fff9eb; }
+    .coverage-notice strong { display: block; margin-bottom: 5px; font-family: var(--sans); font-size: 12px; text-transform: uppercase; }
+    .coverage-notice p:last-child { margin-bottom: 0; }
     .interactive-fallback { padding: 13px 15px; border-left: 3px solid var(--gold); color: #5d4b26; background: #fff9eb; }
     @media (max-width: 1199px) {
       .layout { display: block; }
@@ -183,14 +186,15 @@
       <div class="content">
         <div class="depth-control" role="group" aria-label="閱讀深度"><strong>閱讀深度</strong><div class="depth-presets"><button class="depth-preset" type="button" data-depth-preset="overview" aria-pressed="true">概覽</button><button class="depth-preset" type="button" data-depth-preset="study" aria-pressed="false">研讀</button><button class="depth-preset" type="button" data-depth-preset="deep" aria-pressed="false">深入</button></div></div>
 
-        <section id="overview" data-title="概覽"><h2>論文概覽</h2><p class="section-intro">{{OVERVIEW_CONTEXT}}</p><p class="section-intro">{{OVERVIEW_METHOD}}</p><details data-depth="study"><summary>研讀：證據鏈與貢獻</summary><p>{{OVERVIEW_EVIDENCE}}</p></details><details data-depth="deep"><summary>深入：證據邊界與限制</summary><p>{{OVERVIEW_BOUNDARY}}</p></details></section>
-        <section id="context" data-title="背景"><h2>背景與研究定位</h2><p class="section-intro">{{CONTEXT_INTRO}}</p><details data-depth="study"><summary>研讀：相關工作類型</summary><p>{{CONTEXT_RELATED}}</p></details><details data-depth="deep"><summary>深入：現有方法限制與本文定位</summary><p>{{CONTEXT_LIMITS}}</p></details></section>
-        <section id="problem" data-title="問題"><h2>問題定義</h2><p class="section-intro">{{PROBLEM_INTRO}}</p><div class="panel reading-panel"><p>{{PROBLEM_TASK}}</p><p>{{PROBLEM_IO}}</p></div><details data-depth="study"><summary>研讀：notation、目標與假設</summary><p>{{PROBLEM_NOTATION}}</p></details><details data-depth="deep"><summary>深入：範圍與約束</summary><p>{{PROBLEM_CONSTRAINTS}}</p></details></section>
-        <section id="approach" data-title="方法"><h2>方法與系統設計</h2><p class="section-intro">{{APPROACH_INTRO}}</p><ol class="method-steps"><li><strong>{{STEP_1}}</strong><p>{{STEP_1_TEXT}}</p></li><li><strong>{{STEP_2}}</strong><p>{{STEP_2_TEXT}}</p></li><li><strong>{{STEP_3}}</strong><p>{{STEP_3_TEXT}}</p></li><li><strong>{{STEP_4}}</strong><p>{{STEP_4_TEXT}}</p></li></ol><div class="equation tex2jax_process"><span class="equation-title">{{EQ1_LABEL}}</span><span class="formula-fallback">{{EQ1_FALLBACK}}</span><span class="mathjax-formula">$$ {{EQ1_BODY}} $$</span><p>{{EQ1_EXPLANATION}}</p><div class="ref-row"><span class="ref formula">{{EQ1_SOURCE}}</span></div></div><figure class="figure"><img src="{{APPROACH_FIGURE_IMAGE}}" alt="{{APPROACH_FIGURE_ALT}}" data-zoom tabindex="0" role="button"><figcaption><p>{{APPROACH_FIGURE_CAPTION}}</p><p>{{APPROACH_FIGURE_GUIDE}}</p></figcaption></figure><details data-depth="study"><summary>研讀：資料流與模組介面</summary><p>{{APPROACH_DATAFLOW}}</p></details><details data-depth="deep"><summary>深入：座標、推導與機制</summary><p>{{APPROACH_DERIVATION}}</p></details></section>
-        <section id="setup" data-title="設定"><h2>實作與驗證設計</h2><p class="section-intro">{{SETUP_INTRO}}</p><div class="panel reading-panel"><p>{{SETUP_DATA}}</p><p>{{SETUP_PREPROCESSING}}</p><p>{{SETUP_TRAINING}}</p><p>{{SETUP_IMPLEMENTATION}}</p><p>{{SETUP_METRICS}}</p><p>{{SETUP_HARDWARE}}</p><p>{{SETUP_SOFTWARE}}</p></div><details data-depth="study"><summary>研讀：baselines、metrics 與硬體</summary><p>{{SETUP_BASELINES}}</p></details><details data-depth="deep"><summary>深入：reproduction details 與未報告項目</summary><p>{{SETUP_REPRODUCTION}}</p></details></section>
-        <section id="results" data-title="結果"><h2>結果與分析</h2><p class="section-intro">{{RESULTS_INTRO}}</p><div class="panel reading-panel"><p>{{RESULTS_METRICS}}</p><p>{{RESULTS_MAIN}}</p></div><div class="table-scroll"><table class="metric-table"><caption>{{TABLE_CAPTION}}</caption><thead><tr><th scope="col">Method</th><th scope="col">Metric</th><th scope="col">Reading note</th></tr></thead><tbody><tr><td>{{BASELINE}}</td><td>{{BASELINE_SCORE}}</td><td>{{BASELINE_NOTE}}</td></tr><tr><td>{{OURS}} <span class="best">best</span></td><td>{{OURS_SCORE}}</td><td>{{OURS_NOTE}}</td></tr></tbody></table></div><figure class="figure"><img src="{{RESULTS_FIGURE_IMAGE}}" alt="{{RESULTS_FIGURE_ALT}}" data-zoom tabindex="0" role="button"><figcaption><p>{{RESULTS_FIGURE_CAPTION}}</p><p>{{RESULTS_FIGURE_GUIDE}}</p></figcaption></figure><details data-depth="study"><summary>研讀：比較與 ablation</summary><p>{{RESULTS_COMPARISON}}</p></details><details data-depth="deep"><summary>深入：runtime、complexity 與 error analysis</summary><p>{{RESULTS_ERROR_ANALYSIS}}</p></details></section>
-        <section id="discussion" data-title="討論"><h2>討論與限制</h2><p class="section-intro">{{DISCUSSION_INTRO}}</p><details data-depth="study"><summary>研讀：結果含義與 trade-off</summary><p>{{DISCUSSION_MEANING}}</p></details><details data-depth="deep"><summary>深入：validity、failure cases 與 generalizability</summary><p>{{DISCUSSION_LIMITS}}</p></details></section>
-        <section id="conclusion" data-title="結論"><h2>結論與延伸</h2><p class="section-intro">{{CONCLUSION_INTRO}}</p><details data-depth="study"><summary>研讀：證據支持的結論</summary><p>{{CONCLUSION_EVIDENCE}}</p></details><details data-depth="deep"><summary>深入：意涵與 future work</summary><p>{{CONCLUSION_FUTURE}}</p></details></section>
+        <!-- Each slot accepts either present-section prose/details or one visible coverage notice. Within present content, repeat or omit technical blocks, formulas, figures, and tables to match the paper. Every claim or artifact citation carries data-evidence-ids and a descendant .evidence-badge; claim prose also carries data-claim-id. Preserve PDF artifact and table order. -->
+        <section id="overview" data-title="概覽"><h2>論文概覽</h2>{{OVERVIEW_CONTENT}}</section>
+        <section id="context" data-title="背景"><h2>背景與研究定位</h2>{{CONTEXT_CONTENT}}</section>
+        <section id="problem" data-title="問題"><h2>問題定義</h2>{{PROBLEM_CONTENT}}</section>
+        <section id="approach" data-title="方法"><h2>方法與系統設計</h2>{{APPROACH_CONTENT}}</section>
+        <section id="setup" data-title="設定"><h2>實作與驗證設計</h2>{{SETUP_CONTENT}}</section>
+        <section id="results" data-title="結果"><h2>結果與分析</h2>{{RESULTS_CONTENT}}</section>
+        <section id="discussion" data-title="討論"><h2>討論與限制</h2>{{DISCUSSION_CONTENT}}</section>
+        <section id="conclusion" data-title="結論"><h2>結論與延伸</h2>{{CONCLUSION_CONTENT}}</section>
       </div>
     </main>
 
@@ -204,13 +208,22 @@
   <script id="guide-manifest" type="application/json">
   {
     "paper_id": "{{PAPER_ID}}",
+    "title": "{{TITLE}}",
+    "paper_type": "{{PAPER_TYPE}}",
     "language": "zh-Hant",
     "section_order": ["overview", "context", "problem", "approach", "setup", "results", "discussion", "conclusion"],
     "sections": {
-      "overview": {"status": "unverified"}, "context": {"status": "unverified"}, "problem": {"status": "unverified"}, "approach": {"status": "unverified"},
-      "setup": {"status": "unverified"}, "results": {"status": "unverified"}, "discussion": {"status": "unverified"}, "conclusion": {"status": "unverified"}
+      "overview": {"status": "unverified", "source_pages": [], "status_note": "{{OVERVIEW_STATUS_NOTE}}"},
+      "context": {"status": "unverified", "source_pages": [], "status_note": "{{CONTEXT_STATUS_NOTE}}"},
+      "problem": {"status": "unverified", "source_pages": [], "status_note": "{{PROBLEM_STATUS_NOTE}}"},
+      "approach": {"status": "unverified", "source_pages": [], "status_note": "{{APPROACH_STATUS_NOTE}}"},
+      "setup": {"status": "unverified", "source_pages": [], "status_note": "{{SETUP_STATUS_NOTE}}"},
+      "results": {"status": "unverified", "source_pages": [], "status_note": "{{RESULTS_STATUS_NOTE}}"},
+      "discussion": {"status": "unverified", "source_pages": [], "status_note": "{{DISCUSSION_STATUS_NOTE}}"},
+      "conclusion": {"status": "unverified", "source_pages": [], "status_note": "{{CONCLUSION_STATUS_NOTE}}"}
     },
-    "evidence": []
+    "evidence": [],
+    "claims": []
   }
   </script>
   <script id="notes-data" type="application/json">

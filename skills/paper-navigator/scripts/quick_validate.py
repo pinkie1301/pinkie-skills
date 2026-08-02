@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Static validation for a paper-guide HTML output.
+"""Static contract validation for a Paper Navigator HTML bundle.
 
-This is intentionally smaller than a browser test runner. It checks the
-portable-bundle contract, then optionally asks Node to syntax-check inline JS.
+The validator intentionally uses only the Python standard library. Browser
+tests remain responsible for runtime interaction and responsive layout.
 """
 
 from __future__ import annotations
@@ -10,19 +10,76 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import tempfile
+from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 CANONICAL_SECTIONS = [
-    "overview", "context", "problem", "approach",
-    "setup", "results", "discussion", "conclusion",
+    "overview",
+    "context",
+    "problem",
+    "approach",
+    "setup",
+    "results",
+    "discussion",
+    "conclusion",
 ]
+PAPER_TYPES = {"empirical", "theory", "survey", "dataset", "hci"}
 COVERAGE_STATUSES = {"present", "not reported", "not applicable", "unverified"}
 EVIDENCE_KINDS = {"paper-stated", "derived", "guide-inference"}
 EVIDENCE_STATUSES = {"verified", "unverified", "not reported"}
+EVIDENCE_FIELDS = {
+    "id",
+    "section_id",
+    "evidence_kind",
+    "status",
+    "source_pages",
+    "refs",
+    "statement",
+}
+CLAIM_FIELDS = {"id", "section_id", "statement", "evidence_ids"}
+BADGE_LABELS = {
+    "paper-stated": "論文明述",
+    "derived": "導讀推導",
+    "guide-inference": "導讀判讀",
+}
+VOID_ELEMENTS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
+
+
+@dataclass
+class ElementRecord:
+    tag: str
+    attrs: dict[str, str]
+    section_id: str | None
+    ancestors: tuple[int, ...]
+    text_parts: list[str] = field(default_factory=list)
+
+    @property
+    def classes(self) -> set[str]:
+        return set(self.attrs.get("class", "").split())
+
+    @property
+    def text(self) -> str:
+        return " ".join(" ".join(self.text_parts).split())
 
 
 class GuideParser(HTMLParser):
@@ -34,7 +91,7 @@ class GuideParser(HTMLParser):
         self.images: list[str] = []
         self.image_alts: list[str] = []
         self.scripts: list[dict[str, str]] = []
-        self.elements: list[tuple[str, dict[str, str]]] = []
+        self.elements: list[ElementRecord] = []
         self.section_intro_counts: dict[str, int] = {}
         self.depth_presets: list[str] = []
         self.depth_details: list[str] = []
@@ -42,35 +99,41 @@ class GuideParser(HTMLParser):
         self.fallbacks_by_section: dict[str, set[str]] = {}
         self.canvas_sections: list[str | None] = []
         self.simulator_sections: list[str | None] = []
-        self._section_stack: list[str] = []
-        self._script: dict[str, object] | None = None
+        self._stack: list[int] = []
+        self._script_index: int | None = None
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def _record(self, tag: str, attrs: list[tuple[str, str | None]], push: bool) -> None:
         values = {key: value or "" for key, value in attrs}
-        self.elements.append((tag, values))
+        section_id = values.get("id") if tag == "section" and values.get("id") else None
+        if section_id is None:
+            for index in reversed(self._stack):
+                if self.elements[index].tag == "section":
+                    section_id = self.elements[index].attrs.get("id") or None
+                    break
+
+        record = ElementRecord(tag=tag, attrs=values, section_id=section_id, ancestors=tuple(self._stack))
+        index = len(self.elements)
+        self.elements.append(record)
 
         if "id" in values:
             self.ids.append(values["id"])
         if tag == "section" and values.get("id"):
             self.sections.append(values["id"])
-            self._section_stack.append(values["id"])
-        if tag == "p" and self._section_stack and "section-intro" in values.get("class", "").split():
-            section_id = self._section_stack[-1]
+        if tag == "p" and section_id and "section-intro" in record.classes:
             self.section_intro_counts[section_id] = self.section_intro_counts.get(section_id, 0) + 1
         if values.get("data-depth-preset"):
             self.depth_presets.append(values["data-depth-preset"])
         if values.get("data-depth"):
             depth = values["data-depth"]
             self.depth_details.append(depth)
-            if self._section_stack:
-                self.depth_details_by_section.setdefault(self._section_stack[-1], set()).add(depth)
+            if section_id:
+                self.depth_details_by_section.setdefault(section_id, set()).add(depth)
         if values.get("data-fallback-for"):
-            section_id = self._section_stack[-1] if self._section_stack else ""
-            self.fallbacks_by_section.setdefault(section_id, set()).add(values["data-fallback-for"])
+            self.fallbacks_by_section.setdefault(section_id or "", set()).add(values["data-fallback-for"])
         if tag == "canvas":
-            self.canvas_sections.append(self._section_stack[-1] if self._section_stack else None)
-        if "data-simulator" in values or "simulator" in values.get("class", "").split():
-            self.simulator_sections.append(self._section_stack[-1] if self._section_stack else None)
+            self.canvas_sections.append(section_id)
+        if "data-simulator" in values or "simulator" in record.classes:
+            self.simulator_sections.append(section_id)
         if tag == "a" and "href" in values:
             self.links.append((values["href"], "href"))
         if tag in {"img", "source"} and values.get("src"):
@@ -80,18 +143,31 @@ class GuideParser(HTMLParser):
         if tag == "link" and values.get("href"):
             self.links.append((values["href"], "link"))
         if tag == "script":
-            self._script = {"src": values.get("src", ""), "type": values.get("type", ""), "data": ""}
-            self.scripts.append(self._script)  # type: ignore[arg-type]
+            self.scripts.append({"src": values.get("src", ""), "type": values.get("type", ""), "data": ""})
+            self._script_index = len(self.scripts) - 1
+
+        if push and tag not in VOID_ELEMENTS:
+            self._stack.append(index)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._record(tag, attrs, push=True)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._record(tag, attrs, push=False)
 
     def handle_data(self, data: str) -> None:
-        if self._script is not None:
-            self._script["data"] = str(self._script["data"]) + data
+        for index in self._stack:
+            self.elements[index].text_parts.append(data)
+        if self._script_index is not None:
+            self.scripts[self._script_index]["data"] += data
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "script":
-            self._script = None
-        elif tag == "section" and self._section_stack:
-            self._section_stack.pop()
+            self._script_index = None
+        for position in range(len(self._stack) - 1, -1, -1):
+            if self.elements[self._stack[position]].tag == tag:
+                del self._stack[position:]
+                break
 
 
 def add_error(errors: list[str], message: str) -> None:
@@ -213,22 +289,55 @@ def check_notes(source: str, sections: list[str], errors: list[str], warnings: l
         add_error(errors, "strict guide requires notes-data JSON with context, terms, evidence, and review arrays")
 
 
-def check_manifest(source: str, sections: list[str], errors: list[str], warnings: list[str], strict: bool) -> None:
+def valid_page(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def check_page_array(value: object, label: str, errors: list[str]) -> bool:
+    if not isinstance(value, list):
+        add_error(errors, f"{label} must be an array")
+        return False
+    invalid = [page for page in value if not valid_page(page)]
+    if invalid:
+        add_error(errors, f"{label} must contain only positive integer pages")
+        return False
+    return True
+
+
+def check_exact_fields(value: dict[str, object], required: set[str], label: str, errors: list[str]) -> None:
+    missing = sorted(required - set(value))
+    extra = sorted(set(value) - required)
+    if missing:
+        add_error(errors, f"{label} missing fields: {', '.join(missing)}")
+    if extra:
+        add_error(errors, f"{label} has unknown fields: {', '.join(extra)}")
+
+
+def check_manifest(
+    source: str,
+    sections: list[str],
+    errors: list[str],
+    warnings: list[str],
+    strict: bool,
+) -> dict[str, object] | None:
     payload = extract_json_script(source, "guide-manifest")
     if payload is None:
         message = "guide-manifest JSON is missing"
         (add_error if strict else add_warning)(errors if strict else warnings, message)
-        return
+        return None
     if payload == "__invalid_json__" or not isinstance(payload, dict):
         add_error(errors, "guide-manifest is not a JSON object")
-        return
+        return None
+
     order = payload.get("section_order")
     if order != sections:
         add_error(errors, "guide-manifest.section_order does not match HTML section order")
     if strict and order != CANONICAL_SECTIONS:
         add_error(errors, "strict guide must contain the canonical eight-section order")
-    if not payload.get("paper_id"):
+    if not isinstance(payload.get("paper_id"), str) or not str(payload.get("paper_id", "")).strip():
         add_error(errors, "guide-manifest.paper_id is missing")
+    if payload.get("paper_type") not in PAPER_TYPES:
+        add_error(errors, f"guide-manifest.paper_type is invalid: {payload.get('paper_type')!r}")
     if not payload.get("language"):
         message = "guide-manifest.language is missing"
         (add_error if strict else add_warning)(errors if strict else warnings, message)
@@ -248,37 +357,263 @@ def check_manifest(source: str, sections: list[str], errors: list[str], warnings
             if not isinstance(value, dict):
                 add_error(errors, f"guide-manifest.sections entry is not an object: {section}")
                 continue
+            for field_name in ("status", "source_pages", "status_note"):
+                if field_name not in value:
+                    add_error(errors, f"guide-manifest.sections.{section}.{field_name} is required")
             status = value.get("status")
             if status not in COVERAGE_STATUSES:
                 add_error(errors, f"guide-manifest.sections.{section}.status is invalid: {status!r}")
+            pages = value.get("source_pages")
+            pages_valid = check_page_array(pages, f"guide-manifest.sections.{section}.source_pages", errors)
+            if status == "present" and (not pages_valid or not pages):
+                add_error(errors, f"present section {section} requires source_pages with at least one positive integer")
+            status_note = value.get("status_note")
+            if not isinstance(status_note, str):
+                add_error(errors, f"guide-manifest.sections.{section}.status_note must be a string")
+            elif status != "present" and not status_note.strip():
+                add_error(errors, f"non-present section {section} requires a non-empty status_note")
 
     evidence = payload.get("evidence")
-    if evidence is None:
-        message = "guide-manifest.evidence must be an array"
-        (add_error if strict else add_warning)(errors if strict else warnings, message)
-    elif not isinstance(evidence, list):
+    evidence_ids: set[str] = set()
+    if not isinstance(evidence, list):
         add_error(errors, "guide-manifest.evidence must be an array")
     else:
+        if strict and not evidence:
+            add_error(errors, "guide-manifest.evidence must contain at least one block")
         for index, block in enumerate(evidence, start=1):
             label = f"guide-manifest.evidence[{index}]"
             if not isinstance(block, dict):
                 add_error(errors, f"{label} must be an object")
                 continue
+            check_exact_fields(block, EVIDENCE_FIELDS, label, errors)
+            evidence_id = block.get("id")
+            if not isinstance(evidence_id, str) or not evidence_id.strip():
+                add_error(errors, f"{label}.id must be a non-empty string")
+            elif evidence_id in evidence_ids:
+                add_error(errors, f"duplicate evidence id: {evidence_id}")
+            else:
+                evidence_ids.add(evidence_id)
             section_id = block.get("section_id")
             if section_id not in sections:
                 add_error(errors, f"{label}.section_id is unknown: {section_id!r}")
-            if not isinstance(block.get("source_pages"), list):
-                add_error(errors, f"{label}.source_pages must be an array")
-            if block.get("evidence_kind") not in EVIDENCE_KINDS:
-                add_error(errors, f"{label}.evidence_kind is invalid: {block.get('evidence_kind')!r}")
-            if block.get("status") not in EVIDENCE_STATUSES:
-                add_error(errors, f"{label}.status is invalid: {block.get('status')!r}")
+            kind = block.get("evidence_kind")
+            if kind not in EVIDENCE_KINDS:
+                add_error(errors, f"{label}.evidence_kind is invalid: {kind!r}")
+            status = block.get("status")
+            if status not in EVIDENCE_STATUSES:
+                add_error(errors, f"{label}.status is invalid: {status!r}")
+            pages = block.get("source_pages")
+            pages_valid = check_page_array(pages, f"{label}.source_pages", errors)
+            if kind == "paper-stated" and status == "verified" and (not pages_valid or not pages):
+                add_error(errors, f"{label} verified paper-stated evidence requires source_pages")
+            if not isinstance(block.get("refs"), list):
+                add_error(errors, f"{label}.refs must be an array")
+            statement = block.get("statement")
+            if not isinstance(statement, str) or not statement.strip():
+                add_error(errors, f"{label}.statement must be a non-empty string")
+
+    claims = payload.get("claims")
+    claim_ids: set[str] = set()
+    if not isinstance(claims, list):
+        add_error(errors, "guide-manifest.claims must be an array")
+    else:
+        if strict and not claims:
+            add_error(errors, "guide-manifest.claims must contain at least one claim")
+        for index, claim in enumerate(claims, start=1):
+            label = f"guide-manifest.claims[{index}]"
+            if not isinstance(claim, dict):
+                add_error(errors, f"{label} must be an object")
+                continue
+            check_exact_fields(claim, CLAIM_FIELDS, label, errors)
+            claim_id = claim.get("id")
+            if not isinstance(claim_id, str) or not claim_id.strip():
+                add_error(errors, f"{label}.id must be a non-empty string")
+            elif claim_id in claim_ids:
+                add_error(errors, f"duplicate claim id: {claim_id}")
+            else:
+                claim_ids.add(claim_id)
+            if claim.get("section_id") not in sections:
+                add_error(errors, f"{label}.section_id is unknown: {claim.get('section_id')!r}")
+            statement = claim.get("statement")
+            if not isinstance(statement, str) or not statement.strip():
+                add_error(errors, f"{label}.statement must be a non-empty string")
+            claim_evidence = claim.get("evidence_ids")
+            if not isinstance(claim_evidence, list):
+                add_error(errors, f"{label}.evidence_ids must be an array")
+            elif not claim_evidence:
+                add_error(errors, f"{label} must reference at least one evidence id")
+            else:
+                seen: set[str] = set()
+                for evidence_id in claim_evidence:
+                    if not isinstance(evidence_id, str) or not evidence_id.strip():
+                        add_error(errors, f"{label}.evidence_ids must contain non-empty strings")
+                    elif evidence_id in seen:
+                        add_error(errors, f"{label} repeats evidence id: {evidence_id}")
+                    elif evidence_id not in evidence_ids:
+                        add_error(errors, f"{label} references unknown evidence id: {evidence_id}")
+                    seen.add(evidence_id)
+
+    return payload
 
 
-def check_scripts(parser: GuideParser, source: str, html_path: Path, errors: list[str], warnings: list[str]) -> None:
+def split_ids(value: str) -> list[str]:
+    return [item for item in re.split(r"[\s,]+", value.strip()) if item]
+
+
+def records_by_id(items: object) -> dict[str, dict[str, object]]:
+    if not isinstance(items, list):
+        return {}
+    result: dict[str, dict[str, object]] = {}
+    for item in items:
+        if isinstance(item, dict) and isinstance(item.get("id"), str) and item["id"] not in result:
+            result[item["id"]] = item
+    return result
+
+
+def is_descendant(child: ElementRecord, ancestor_index: int) -> bool:
+    return ancestor_index in child.ancestors
+
+
+def check_badges_and_links(
+    parser: GuideParser,
+    manifest: dict[str, object],
+    errors: list[str],
+    strict: bool,
+) -> None:
+    if not strict:
+        return
+    evidence = records_by_id(manifest.get("evidence"))
+    claims = records_by_id(manifest.get("claims"))
+    evidence_uses: dict[str, set[str]] = {evidence_id: set() for evidence_id in evidence}
+    claim_uses: dict[str, int] = {claim_id: 0 for claim_id in claims}
+
+    badge_indices: list[int] = []
+    for index, element in enumerate(parser.elements):
+        has_badge_class = "evidence-badge" in element.classes
+        has_badge_attrs = "data-evidence-id" in element.attrs or "data-evidence-kind" in element.attrs
+        if not (has_badge_class or has_badge_attrs):
+            continue
+        badge_indices.append(index)
+        if not has_badge_class:
+            add_error(errors, "evidence badge attributes require the evidence-badge class")
+        evidence_id = element.attrs.get("data-evidence-id", "").strip()
+        kind = element.attrs.get("data-evidence-kind", "").strip()
+        if not evidence_id:
+            add_error(errors, "evidence badge requires data-evidence-id")
+        if not kind:
+            add_error(errors, f"evidence badge {evidence_id or '<missing>'} requires data-evidence-kind")
+        block = evidence.get(evidence_id)
+        if evidence_id and block is None:
+            add_error(errors, f"evidence badge references unknown evidence id: {evidence_id}")
+            continue
+        if block is not None:
+            expected_kind = block.get("evidence_kind")
+            if kind != expected_kind:
+                add_error(errors, f"badge kind mismatch for {evidence_id}: expected {expected_kind}, found {kind or '<missing>'}")
+            expected_label = BADGE_LABELS.get(str(expected_kind), "")
+            if expected_label and expected_label not in element.text:
+                add_error(errors, f"evidence badge {evidence_id} must visibly label {expected_label}")
+
+    citation_indices: list[int] = []
+    for index, element in enumerate(parser.elements):
+        if "data-evidence-ids" not in element.attrs:
+            continue
+        citation_indices.append(index)
+        reference_ids = split_ids(element.attrs.get("data-evidence-ids", ""))
+        if not reference_ids:
+            add_error(errors, f"empty data-evidence-ids in section {element.section_id or '<none>'}")
+            continue
+        if len(reference_ids) != len(set(reference_ids)):
+            add_error(errors, f"duplicate evidence id in HTML citation: {element.attrs.get('data-evidence-ids', '')}")
+        nearby_badges = [parser.elements[badge_index] for badge_index in badge_indices if is_descendant(parser.elements[badge_index], index)]
+        for evidence_id in reference_ids:
+            block = evidence.get(evidence_id)
+            if block is None:
+                add_error(errors, f"HTML citation references unknown evidence id: {evidence_id}")
+                continue
+            section_id = block.get("section_id")
+            if element.section_id != section_id:
+                add_error(errors, f"evidence {evidence_id} belongs to section {section_id}, used in {element.section_id or '<none>'}")
+            evidence_uses[evidence_id].add(element.section_id or "")
+            if not any(badge.attrs.get("data-evidence-id") == evidence_id for badge in nearby_badges):
+                add_error(errors, f"citation for {evidence_id} has no nearby evidence badge")
+
+    for element in parser.elements:
+        artifact_labels: list[str] = []
+        if element.tag == "figure":
+            artifact_labels.append("figure")
+        if element.tag == "table":
+            artifact_labels.append("table")
+        if "equation" in element.classes or element.tag == "math":
+            artifact_labels.append("formula")
+        if "data-technical-block" in element.attrs:
+            artifact_labels.append("technical block")
+        if not artifact_labels:
+            continue
+        if not split_ids(element.attrs.get("data-evidence-ids", "")):
+            for label in artifact_labels:
+                add_error(errors, f"{label} in section {element.section_id or '<none>'} requires data-evidence-ids")
+
+    html_claim_ids: set[str] = set()
+    for element in parser.elements:
+        if "data-claim-id" not in element.attrs:
+            continue
+        claim_id = element.attrs.get("data-claim-id", "").strip()
+        if not claim_id:
+            add_error(errors, "data-claim-id must be non-empty")
+            continue
+        if claim_id in html_claim_ids:
+            add_error(errors, f"duplicate HTML claim id: {claim_id}")
+        html_claim_ids.add(claim_id)
+        claim = claims.get(claim_id)
+        if claim is None:
+            add_error(errors, f"HTML references unknown claim id: {claim_id}")
+            continue
+        claim_uses[claim_id] += 1
+        if element.section_id != claim.get("section_id"):
+            add_error(errors, f"claim {claim_id} belongs to section {claim.get('section_id')}, used in {element.section_id or '<none>'}")
+        html_evidence = split_ids(element.attrs.get("data-evidence-ids", ""))
+        claim_evidence = claim.get("evidence_ids") if isinstance(claim.get("evidence_ids"), list) else []
+        if html_evidence != claim_evidence:
+            add_error(errors, f"claim {claim_id} data-evidence-ids do not match manifest evidence_ids")
+
+    for claim_id, uses in claim_uses.items():
+        if uses == 0:
+            add_error(errors, f"unused claim id: {claim_id}")
+    for evidence_id, uses in evidence_uses.items():
+        if not uses:
+            add_error(errors, f"unused evidence id: {evidence_id}")
+
+    section_data = manifest.get("sections")
+    if isinstance(section_data, dict):
+        for section in parser.sections:
+            value = section_data.get(section)
+            if not isinstance(value, dict):
+                continue
+            status = value.get("status")
+            if status == "present":
+                used = any(section in uses for uses in evidence_uses.values())
+                if not used:
+                    add_error(errors, f"present section {section} has no used evidence")
+                continue
+            notices = [
+                element
+                for element in parser.elements
+                if element.section_id == section
+                and "coverage-notice" in element.classes
+                and "data-coverage-notice" in element.attrs
+            ]
+            if not notices:
+                add_error(errors, f"non-present section {section} requires a coverage notice")
+                continue
+            if not any(notice.attrs.get("data-coverage-status") == status and notice.text.strip() for notice in notices):
+                add_error(errors, f"coverage notice for section {section} must be visible and match status {status}")
+
+
+def check_scripts(parser: GuideParser, html_path: Path, errors: list[str], warnings: list[str]) -> None:
     for script in parser.scripts:
-        src = str(script["src"])
-        script_type = str(script["type"]).lower()
+        src = script["src"]
+        script_type = script["type"].lower()
         if script_type == "application/json":
             continue
         if src:
@@ -287,24 +622,35 @@ def check_scripts(parser: GuideParser, source: str, html_path: Path, errors: lis
                     add_error(errors, f"external runtime is not allowed: {src}")
             else:
                 check_local_path(src, "script", html_path, errors)
-        else:
-            data = str(script["data"])
-            if re.search(r"\bfetch\s*\(|\bimport\s*\(", data):
-                add_error(errors, "inline script uses fetch or dynamic import")
+        elif re.search(r"\bfetch\s*\(|\bimport\s*\(", script["data"]):
+            add_error(errors, "inline script uses fetch or dynamic import")
 
     if not parser.scripts:
         add_warning(warnings, "no JavaScript found; interactive features cannot run")
 
 
-def check_paragraph_contract(parser: GuideParser, errors: list[str]) -> None:
+def section_statuses(manifest: dict[str, object] | None, sections: list[str]) -> dict[str, object]:
+    if manifest and isinstance(manifest.get("sections"), dict):
+        values = manifest["sections"]
+        return {
+            section: values[section].get("status")
+            for section in sections
+            if isinstance(values.get(section), dict)
+        }
+    return {section: "present" for section in sections}
+
+
+def check_paragraph_contract(parser: GuideParser, statuses: dict[str, object], errors: list[str]) -> None:
     for section in parser.sections:
+        if statuses.get(section) != "present":
+            continue
         required = 2 if section == "overview" else 1
         actual = parser.section_intro_counts.get(section, 0)
         if actual < required:
-            add_error(errors, f"section {section} needs at least {required} section-intro paragraphs; found {actual}")
+            add_error(errors, f"present section {section} needs at least {required} section-intro paragraphs; found {actual}")
 
 
-def check_depth_contract(parser: GuideParser, errors: list[str]) -> None:
+def check_depth_contract(parser: GuideParser, statuses: dict[str, object], errors: list[str]) -> None:
     required_presets = {"overview", "study", "deep"}
     actual_presets = set(parser.depth_presets)
     missing_presets = sorted(required_presets - actual_presets)
@@ -315,17 +661,15 @@ def check_depth_contract(parser: GuideParser, errors: list[str]) -> None:
         add_error(errors, f"unknown depth presets: {', '.join(extra_presets)}")
 
     required_details = {"study", "deep"}
-    actual_details = set(parser.depth_details)
-    missing_details = sorted(required_details - actual_details)
-    if missing_details:
-        add_error(errors, f"depth details missing: {', '.join(missing_details)}")
-    invalid_details = sorted(actual_details - required_details)
+    invalid_details = sorted(set(parser.depth_details) - required_details)
     if invalid_details:
         add_error(errors, f"unknown depth details: {', '.join(invalid_details)}")
     for section in parser.sections:
+        if statuses.get(section) != "present":
+            continue
         missing = sorted(required_details - parser.depth_details_by_section.get(section, set()))
         if missing:
-            add_error(errors, f"section {section} is missing depth details: {', '.join(missing)}")
+            add_error(errors, f"present section {section} is missing depth details: {', '.join(missing)}")
 
 
 def check_interactive_fallbacks(parser: GuideParser, errors: list[str]) -> None:
@@ -344,20 +688,37 @@ def check_content_contract(source: str, parser: GuideParser, errors: list[str], 
         add_error(errors, "unfinished draft marker found")
     if re.search(r'class=["\'][^"\']*\bsortable\b', source, re.IGNORECASE) or re.search(r"table\.sortable|sortTable", source):
         add_error(errors, "sortable table behavior is prohibited")
-    equation_count = sum("equation" in attrs.get("class", "").split() for _, attrs in parser.elements)
-    fallback_count = sum("formula-fallback" in attrs.get("class", "").split() for _, attrs in parser.elements)
-    if equation_count and fallback_count < equation_count:
-        add_error(errors, f"formula fallback coverage is incomplete: {fallback_count}/{equation_count}")
+    equations = [element for element in parser.elements if "equation" in element.classes]
+    fallbacks = [element for element in parser.elements if "formula-fallback" in element.classes]
+    for equation in equations:
+        equation_index = parser.elements.index(equation)
+        if not any(is_descendant(fallback, equation_index) for fallback in fallbacks):
+            add_error(errors, f"formula in section {equation.section_id or '<none>'} needs a formula-fallback")
     if strict and not re.search(r'<html[^>]+\blang=["\'][^"\']+["\']', source, re.IGNORECASE):
         add_error(errors, "html lang is missing")
     if strict and any(not alt.strip() for alt in parser.image_alts):
         add_error(errors, "every img element must have non-empty alt text")
 
 
+def check_inline_javascript(parser: GuideParser, errors: list[str], warnings: list[str]) -> None:
+    scripts = [script["data"] for script in parser.scripts if not script["src"] and script["type"].lower() != "application/json"]
+    node = shutil.which("node")
+    if scripts and node:
+        for index, script in enumerate(scripts, start=1):
+            with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
+                handle.write(script)
+                handle.flush()
+                result = subprocess.run([node, "--check", handle.name], capture_output=True, text=True, check=False)
+            if result.returncode:
+                add_error(errors, f"inline script {index} failed syntax check: {result.stderr.strip()}")
+    elif scripts:
+        add_warning(warnings, "Node is unavailable; JavaScript syntax check skipped")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("html", type=Path, help="paper-guide.html to validate")
-    parser.add_argument("--strict", action="store_true", help="treat manifest and notes gaps as errors")
+    parser.add_argument("--strict", action="store_true", help="enforce the complete manifest and HTML evidence contract")
     parser.add_argument("--json", action="store_true", dest="as_json", help="emit a JSON report")
     return parser.parse_args()
 
@@ -385,31 +746,24 @@ def main() -> int:
         add_error(errors, "strict guide must contain all canonical sections in order")
 
     for image in parser.images:
+        if image.startswith("data:"):
+            continue
         if is_external(image):
             add_error(errors, f"portable guides must use local images: {image}")
         else:
             check_local_path(image, "image", html_path, errors)
     check_anchors(parser, html_path, errors)
     check_notes(source, parser.sections, errors, warnings, args.strict)
-    check_manifest(source, parser.sections, errors, warnings, args.strict)
-    check_scripts(parser, source, html_path, errors, warnings)
-    check_paragraph_contract(parser, errors)
-    check_depth_contract(parser, errors)
+    manifest = check_manifest(source, parser.sections, errors, warnings, args.strict)
+    check_scripts(parser, html_path, errors, warnings)
+    statuses = section_statuses(manifest, parser.sections)
+    check_paragraph_contract(parser, statuses, errors)
+    check_depth_contract(parser, statuses, errors)
     check_interactive_fallbacks(parser, errors)
     check_content_contract(source, parser, errors, args.strict)
-
-    js_scripts = [str(item["data"]) for item in parser.scripts if not item["src"] and str(item["type"]).lower() != "application/json"]
-    node = subprocess.run(["sh", "-c", "command -v node"], capture_output=True, text=True).stdout.strip()
-    if js_scripts and node:
-        for index, script in enumerate(js_scripts, start=1):
-            with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8") as handle:
-                handle.write(script)
-                handle.flush()
-                result = subprocess.run([node, "--check", handle.name], capture_output=True, text=True)
-            if result.returncode:
-                add_error(errors, f"inline script {index} failed syntax check: {result.stderr.strip()}")
-    elif js_scripts:
-        add_warning(warnings, "Node is unavailable; JavaScript syntax check skipped")
+    if manifest is not None:
+        check_badges_and_links(parser, manifest, errors, args.strict)
+    check_inline_javascript(parser, errors, warnings)
 
     report = {
         "html": str(html_path),
