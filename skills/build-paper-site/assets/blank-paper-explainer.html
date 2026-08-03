@@ -1,0 +1,511 @@
+<!doctype html>
+<!--
+  Build Paper Site starter layout.
+
+  This file is a visual and interaction skeleton only. Replace every
+  {{...}} token with paper-specific values before delivery. Build the
+  section list and its order from the manifest; do not assume a fixed paper
+  outline. Put term and formula explanations in the section-aware right rail,
+  and keep every locator visible in its evidence badge.
+-->
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <!-- Optional: add a locally bundled MathJax script here before the guide
+       bundle, for example <script src="{{MATHJAX_LOCAL_SRC}}"></script>.
+       Formula fallbacks remain visible until MathJax reports success. -->
+  <style>
+    :root {
+      --bg: #f5f7f3;
+      --paper: #fff;
+      --ink: #18231d;
+      --muted: #627067;
+      --line: #dbe3dc;
+      --green: #174333;
+      --green-soft: #edf5f1;
+      --blue: #17465d;
+      --blue-soft: #edf4f7;
+      --gold: #9c7022;
+      --gold-soft: #fff9eb;
+      --rose: #77353c;
+      --rose-soft: #fbf0f1;
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --serif: Georgia, "Times New Roman", "Noto Serif TC", serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --radius: 9px;
+      --ease-out: cubic-bezier(.23, 1, .32, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { max-width: 100%; margin: 0; overflow-x: clip; }
+    body { color: var(--ink); background: var(--bg); font: 17px/1.78 var(--serif); }
+    body.lightbox-open { overflow: hidden; }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; }
+    button { font: inherit; }
+    main { min-width: 0; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(216px, 252px) minmax(0, 1fr) minmax(260px, 304px);
+      min-height: 100vh;
+    }
+
+    .toc, .notes {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, .92);
+      font-family: var(--sans);
+    }
+    .toc {
+      padding: 28px 18px;
+      border-right: 1px solid var(--line);
+    }
+    .notes { padding: 28px 20px; border-left: 1px solid var(--line); }
+
+    .brand { display: grid; gap: 5px; margin: 0 8px 22px; color: var(--green); }
+    .brand strong { font-size: 15px; letter-spacing: .055em; text-transform: uppercase; }
+    .brand span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .toc-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .toc-link {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      align-items: center;
+      min-height: 37px;
+      padding: 6px 8px;
+      border-radius: var(--radius);
+      color: #435049;
+      text-decoration: none;
+      transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), transform 140ms var(--ease-out);
+    }
+    .toc-link.active { color: var(--green); background: var(--green-soft); }
+    .toc-link:active { transform: scale(.97); }
+    .toc-link b { color: var(--gold); font: 700 11px/1 var(--mono); }
+    .toc-link span { min-width: 0; overflow: hidden; font-size: 13px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+
+    .hero {
+      color: #fff;
+      background:
+        radial-gradient(circle at 84% 14%, rgba(100, 162, 126, .28), transparent 35%),
+        linear-gradient(135deg, #102f24 0%, #1e513d 58%, #174333 100%);
+    }
+    .hero-inner, .hero > .hero-inner { width: min(100%, 1040px); margin: 0 auto; padding: clamp(48px, 7vw, 84px) clamp(26px, 5vw, 68px) clamp(44px, 6vw, 68px); }
+    .kicker { display: inline-flex; gap: 10px; align-items: center; color: #e4f2ea; font: 800 13px/1.4 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+    .kicker::before { content: ""; width: 32px; height: 2px; background: #e5c16e; }
+    h1, h2, h3 { color: var(--green); line-height: 1.25; }
+    h1 { max-width: 900px; margin: 16px 0 0; color: #fff; font-size: clamp(34px, 4.6vw, 58px); line-height: 1.08; letter-spacing: -.03em; }
+    .hero-summary { max-width: 830px; margin: 20px 0 0; color: rgba(255, 255, 255, .9); font-size: clamp(18px, 2vw, 22px); line-height: 1.55; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 23px; color: rgba(255, 255, 255, .8); font: 12px/1.45 var(--sans); }
+    .hero-meta span, .hero-meta a { padding: 6px 10px; border: 1px solid rgba(255, 255, 255, .28); border-radius: 999px; text-decoration: none; }
+    .hero-meta a { color: #fff; background: rgba(255, 255, 255, .1); }
+
+    .content { width: min(100%, 1040px); margin: 0 auto; padding: 36px clamp(26px, 5vw, 68px) 78px; }
+    section { padding: 46px 0; border-top: 1px solid var(--line); scroll-margin-top: 24px; }
+    section:first-child { border-top: 0; }
+    .section-kicker { margin-bottom: 7px; color: var(--gold); font: 900 12px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+    .chapter-label { margin-bottom: 7px; color: var(--gold); font: 900 12px/1.4 var(--sans); letter-spacing: .04em; }
+    h2 { margin: 0 0 18px; font-size: clamp(27px, 3.7vw, 42px); letter-spacing: -.02em; }
+    h3 { margin: 24px 0 9px; color: #26362f; font-size: 21px; }
+    p { margin: 0 0 16px; }
+    ul, ol { margin-top: 8px; margin-bottom: 18px; }
+    li { margin-bottom: 6px; }
+    .lead { color: #3e4b45; font-size: 19px; line-height: 1.68; }
+
+    .evidence-strip { display: flex; flex-wrap: wrap; gap: 7px; margin: 15px 0 21px; font-family: var(--sans); }
+    .source-chip, .status-chip {
+      display: inline-flex;
+      min-height: 27px;
+      align-items: center;
+      padding: 4px 8px;
+      border: 1px solid rgba(39, 107, 143, .22);
+      border-radius: 999px;
+      color: var(--blue);
+      background: var(--blue-soft);
+      font-size: 11px;
+      font-weight: 850;
+    }
+    .source-chip.kind { color: #2d553f; border-color: rgba(40, 102, 79, .26); background: var(--green-soft); }
+    .status-chip.missing { color: var(--rose); border-color: rgba(169, 73, 81, .3); background: var(--rose-soft); }
+    .evidence-badge {
+      display: inline-flex;
+      min-height: 25px;
+      align-items: center;
+      margin-left: 7px;
+      padding: 3px 8px;
+      border: 1px solid rgba(39, 107, 143, .22);
+      border-radius: 999px;
+      color: var(--blue);
+      background: var(--blue-soft);
+      font: 900 11px/1.5 var(--sans);
+      vertical-align: middle;
+    }
+
+    .grid, .module-grid, .formula-grid { display: grid; gap: 13px; margin: 22px 0; }
+    .grid.two, .formula-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three, .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .panel, .module-card, .formula-card, .callout, .coverage-notice, .equation, .figure, .table-asset {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+    .panel, .module-card, .formula-card, .callout { padding: 17px; }
+    .panel.soft, .callout { background: linear-gradient(135deg, #f4faf6, #fff); }
+    .callout.warn { border-color: rgba(169, 73, 81, .25); background: linear-gradient(135deg, #fff6f5, #fff); }
+    .callout b { color: var(--green); }
+    .callout.warn b { color: var(--rose); }
+    .module-card h3, .formula-card h3 { margin-top: 0; color: var(--green); font: 750 16px/1.3 var(--sans); }
+    .module-card p, .formula-card span { color: var(--muted); font: 13px/1.58 var(--sans); }
+
+    .steps { counter-reset: step; display: grid; gap: 12px; margin: 22px 0; padding: 0; list-style: none; font-family: var(--sans); }
+    .steps li { position: relative; padding: 15px 17px 15px 55px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .steps li::before { counter-increment: step; content: counter(step); position: absolute; top: 16px; left: 14px; width: 27px; height: 27px; display: grid; place-items: center; border-radius: 999px; color: #fff; background: var(--green); font-size: 12px; font-weight: 900; }
+    .steps b { display: block; margin-bottom: 4px; color: #25362f; font-size: 14px; }
+    .steps span { color: var(--muted); font-size: 13px; line-height: 1.58; }
+
+    .equation { margin: 20px 0; padding: 17px 18px; border-color: rgba(39, 107, 143, .22); background: #fbfdfd; overflow-x: auto; }
+    .equation-title { display: block; margin-bottom: 9px; color: var(--blue); font: 900 12px/1.4 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+    .formula-body, .formula-fallback { display: block; overflow-x: auto; padding: 12px; color: #24342d; background: #f7f8f6; font: 14px/1.55 var(--mono); white-space: pre-wrap; }
+    .mathjax-formula { display: none; overflow-x: auto; padding: 12px; }
+    body.mathjax-ready .mathjax-formula { display: block; }
+    body.mathjax-ready .formula-fallback { display: none; }
+    .figure, .table-asset { margin: 28px 0; overflow: hidden; }
+    .figure img, .table-asset img { width: 100%; max-height: 820px; object-fit: contain; background: #f3f5f1; cursor: zoom-in; transition: transform 140ms var(--ease-out); }
+    .figure img:active, .table-asset img:active { transform: scale(.97); }
+    figcaption, .asset-caption { padding: 13px 16px 16px; border-top: 1px solid var(--line); color: var(--muted); font: 13px/1.55 var(--sans); }
+    .table-scroll { max-width: 100%; margin: 22px 0; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    table { width: 100%; min-width: 560px; border-collapse: collapse; font: 13px/1.5 var(--sans); }
+    th, td { padding: 10px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--green); background: var(--green-soft); font-size: 11px; letter-spacing: .035em; }
+
+    .coverage-notice { margin: 18px 0; padding: 15px 17px; border-color: rgba(156, 112, 34, .3); border-left: 4px solid var(--gold); color: #5d4b26; background: var(--gold-soft); }
+    .coverage-notice strong { display: block; margin-bottom: 5px; font: 900 12px/1.4 var(--sans); letter-spacing: .04em; text-transform: uppercase; }
+
+    .note-eyebrow { margin: 0 0 6px; color: var(--gold); font: 900 11px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+    .notes h2 { margin: 0; color: var(--green); font: 750 22px/1.3 var(--sans); }
+    .note-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 18px; }
+    .note-tab { min-height: 36px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--paper); cursor: pointer; font: 800 12px/1.3 var(--sans); }
+    .note-tab[aria-selected="true"] { color: var(--green); border-color: rgba(40, 102, 79, .34); background: var(--green-soft); }
+    body:not(.using-keyboard) .note-tab:active { transform: scale(.97); }
+    .note-body { display: grid; gap: 10px; margin-top: 16px; }
+    .note-card { padding: 13px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+    .note-card h3 { margin: 0 0 6px; color: #22352d; font: 800 13px/1.45 var(--sans); overflow-wrap: anywhere; }
+    .note-card p { margin: 0; color: var(--muted); font: 12px/1.6 var(--sans); }
+    .note-empty { padding: 13px 14px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); font: 12px/1.6 var(--sans); }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      visibility: hidden;
+      place-items: center;
+      padding: 28px;
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(8, 16, 13, .89);
+      transition: opacity 180ms var(--ease-out), visibility 0s linear 180ms;
+    }
+    .lightbox.open { visibility: visible; opacity: 1; pointer-events: auto; transition-delay: 0s; }
+    .lightbox img { max-width: min(96vw, 1500px); max-height: 88vh; border-radius: var(--radius); background: #fff; opacity: 0; transform: scale(.97); transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }
+    .lightbox.open img { opacity: 1; transform: scale(1); }
+    .close {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255, 255, 255, .32);
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255, 255, 255, .08);
+      cursor: pointer;
+      font-size: 26px;
+      line-height: 1;
+      transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out);
+    }
+    .close:active { transform: scale(.97); }
+    :focus-visible { outline: 3px solid #e5c16e; outline-offset: 3px; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .toc-link:hover { color: var(--green); background: var(--green-soft); }
+      .note-tab:hover { color: var(--green); border-color: rgba(40, 102, 79, .34); }
+      .close:hover { background: rgba(255, 255, 255, .18); }
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(0, 1fr) 276px; grid-template-areas: "toc toc" "main notes"; align-items: start; }
+      .toc { grid-area: toc; position: sticky; z-index: 10; height: auto; padding: 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+      main { grid-area: main; }
+      .notes { grid-area: notes; position: sticky; top: 0; height: 100vh; padding: 22px 16px; }
+      .brand { margin-bottom: 10px; }
+      .toc-list { display: flex; overflow-x: auto; }
+      .toc-link { grid-template-columns: 28px minmax(max-content, 1fr); white-space: nowrap; }
+      .hero-inner, .hero > .hero-inner { padding-top: 46px; }
+      .grid.two, .grid.three, .module-grid, .formula-grid { grid-template-columns: 1fr; }
+      .content { padding-top: 30px; }
+    }
+    @media (max-width: 700px) {
+      .layout { display: block; }
+      .toc, .notes { position: static; height: auto; }
+      .notes { border-top: 1px solid var(--line); border-left: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+      .lightbox img { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="toc" aria-label="論文目錄">
+      <div class="brand"><strong>{{SHORT_NAME}}</strong><span>{{PAPER_ID}}</span></div>
+      <ol class="toc-list">{{TOC_ITEMS}}</ol>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="hero-inner">
+          <div class="kicker">{{PAPER_ID}}</div>
+          <h1>{{TITLE}}</h1>
+          <p class="hero-summary">{{SUMMARY}}</p>
+          <div class="hero-meta"><span>{{AUTHORS}}</span><span>{{SOURCE_SCOPE}}</span><a href="{{SOURCE_PDF}}">{{SOURCE_LABEL}}</a></div>
+        </div>
+      </header>
+
+      <div class="content">
+        <!--
+          Insert paper-specific <section id="..." data-title="..."> blocks
+          in the exact order declared by guide-manifest.section_order. A
+          section may contain any editorial shape; this starter does not
+          prescribe section names, count, or argument.
+
+          Suggested left TOC only — freely add, remove, rename, merge, split,
+          or reorder items to follow the actual paper:
+          1. 背景
+          2. 問題定義
+          3. 研究方法
+          4. 實驗設計
+          5. 實驗結果
+          6. 結論
+
+          One TOC item and matching section. Keep the visible label identical:
+          <li><a class="toc-link" data-section-link href="#{{SECTION_ID}}"><b>3.1</b><span>{{CHAPTER_TITLE}}</span></a></li>
+          <section id="{{SECTION_ID}}" data-title="3.1 {{CHAPTER_TITLE}}">
+            <div class="chapter-label" data-chapter-label>3.1 {{CHAPTER_TITLE}}</div>
+            <h2>{{SECTION_HEADING}}</h2>
+            {{SECTION_CONTENT}}
+          </section>
+
+          Reusable evidence-linked prose:
+          <p data-claim-id="{{CLAIM_ID}}" data-evidence-ids="{{EVIDENCE_ID}}">
+            {{CLAIM_PROSE}}
+            <span class="evidence-badge" data-evidence-id="{{EVIDENCE_ID}}" data-evidence-kind="{{EVIDENCE_KIND}}">p.1 - p.2</span>
+          </p>
+          A non-present section keeps its visible coverage boundary:
+          <div class="coverage-notice" data-coverage-notice data-coverage-status="{{STATUS}}"><strong>{{STATUS}}</strong><p>{{STATUS_NOTE}}</p></div>
+
+          Formula block (keep a readable fallback beside MathJax when used):
+          <div class="equation tex2jax_process" data-technical-block data-evidence-ids="{{EVIDENCE_ID}}">
+            <span class="equation-title">{{FORMULA_LABEL}}</span>
+            <span class="formula-fallback">{{FORMULA_FALLBACK}}</span>
+            <span class="mathjax-formula">$$ {{FORMULA_TEX}} $$</span>
+            <span class="evidence-badge" data-evidence-id="{{EVIDENCE_ID}}" data-evidence-kind="{{EVIDENCE_KIND}}">p.1 - p.2</span>
+          </div>
+
+          Cropped local figure/table asset (manifest.artifacts must record the
+          source locator, page, and crop bounding box):
+          <figure class="figure" data-artifact-id="{{ARTIFACT_ID}}" data-artifact-kind="figure" data-evidence-ids="{{EVIDENCE_ID}}">
+            <img src="{{ASSET_PATH}}" alt="{{ASSET_ALT}}" data-zoom tabindex="0" role="button">
+            <figcaption>{{CAPTION}} <span class="evidence-badge" data-evidence-id="{{EVIDENCE_ID}}" data-evidence-kind="{{EVIDENCE_KIND}}">fig. 3</span></figcaption>
+          </figure>
+
+          A table crop uses the same structure with
+          data-artifact-kind="table", a manifest artifact kind of "table",
+          and a visible locator such as "table 4".
+          For an interactive canvas or simulator, add a same-section visible
+          marker with data-fallback-for="canvas" or "simulator".
+        -->
+        {{SECTIONS}}
+      </div>
+    </main>
+
+    <aside class="notes" id="notesPanel" aria-label="章節名詞與公式解釋">
+      <p class="note-eyebrow">章節解釋</p>
+      <h2 id="noteTitle">{{INITIAL_CHAPTER_TITLE}}</h2>
+      <div class="note-tabs" role="tablist" aria-label="解釋類型">
+        <button class="note-tab" id="termsTab" type="button" role="tab" aria-selected="true" aria-controls="noteBody" data-note-tab="terms">專有名詞</button>
+        <button class="note-tab" id="formulasTab" type="button" role="tab" aria-selected="false" aria-controls="noteBody" data-note-tab="formulas">公式涵義</button>
+      </div>
+      <div class="note-body" id="noteBody" role="tabpanel" aria-live="polite" aria-labelledby="termsTab"></div>
+    </aside>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="放大檢視裁切圖表">
+    <button class="close" type="button" aria-label="關閉圖片">×</button>
+    <img src="" alt="放大檢視中的圖表" tabindex="-1">
+  </div>
+
+  <!--
+    notes-data must have exactly the same section keys as guide-manifest.
+    Put prerequisite terms and formula meanings here, not in main prose:
+    {
+      "{{SECTION_ID}}": {
+        "terms": [{"title": "{{TERM}}", "body": "{{TERM_EXPLANATION}}"}],
+        "formulas": [{"title": "$\\mathcal{L}_{geo}$", "body": "{{FORMULA_MEANING}}"}]
+      }
+    }
+  -->
+  <script id="notes-data" type="application/json">{{NOTES_JSON}}</script>
+  <script id="guide-manifest" type="application/json">{{MANIFEST_JSON}}</script>
+  <script>
+    (() => {
+      const links = Array.from(document.querySelectorAll('[data-section-link]'));
+      const sections = Array.from(document.querySelectorAll('section[id]'));
+      const noteTabs = Array.from(document.querySelectorAll('[data-note-tab]'));
+      const noteTitle = document.getElementById('noteTitle');
+      const noteBody = document.getElementById('noteBody');
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImage = lightbox.querySelector('img');
+      const closeButton = lightbox.querySelector('.close');
+      let notes = {};
+      let activeSection = sections[0] ? sections[0].id : '';
+      let activeNoteTab = 'terms';
+      let returnFocus = null;
+
+      try { notes = JSON.parse(document.getElementById('notes-data').textContent); } catch (error) { notes = {}; }
+      document.addEventListener('keydown', () => document.body.classList.add('using-keyboard'), true);
+      document.addEventListener('pointerdown', () => document.body.classList.remove('using-keyboard'), true);
+
+      function renderNotes() {
+        const section = document.getElementById(activeSection);
+        noteTitle.textContent = section ? section.dataset.title : '章節解釋';
+        noteBody.replaceChildren();
+        const items = notes[activeSection] && Array.isArray(notes[activeSection][activeNoteTab]) ? notes[activeSection][activeNoteTab] : [];
+        items.forEach(item => {
+          const card = document.createElement('article');
+          const title = document.createElement('h3');
+          const body = document.createElement('p');
+          card.className = 'note-card';
+          title.textContent = item.title;
+          body.textContent = item.body;
+          card.append(title, body);
+          noteBody.append(card);
+        });
+        if (!items.length) {
+          const empty = document.createElement('p');
+          empty.className = 'note-empty';
+          empty.textContent = activeNoteTab === 'terms' ? '本節沒有需要另行解釋的專有名詞。' : '本節沒有需要另行解釋的公式。';
+          noteBody.append(empty);
+        }
+        const activeTab = noteTabs.find(tab => tab.dataset.noteTab === activeNoteTab);
+        if (activeTab) noteBody.setAttribute('aria-labelledby', activeTab.id);
+        if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise([noteBody]).catch(() => {});
+      }
+
+      function selectNoteTab(tabName, focus = false) {
+        activeNoteTab = tabName;
+        noteTabs.forEach(tab => {
+          const active = tab.dataset.noteTab === tabName;
+          tab.setAttribute('aria-selected', String(active));
+          tab.tabIndex = active ? 0 : -1;
+          if (active && focus) tab.focus();
+        });
+        renderNotes();
+      }
+
+      function markActive(link) {
+        links.forEach(item => {
+          const active = item === link;
+          item.classList.toggle('active', active);
+          if (active) item.setAttribute('aria-current', 'location');
+          else item.removeAttribute('aria-current');
+        });
+        const target = link ? link.getAttribute('href').slice(1) : '';
+        if (target) activeSection = target;
+        renderNotes();
+      }
+
+      links.forEach(link => link.addEventListener('click', () => markActive(link)));
+      noteTabs.forEach(tab => {
+        tab.addEventListener('click', () => selectNoteTab(tab.dataset.noteTab));
+        tab.addEventListener('keydown', event => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          const index = noteTabs.indexOf(tab);
+          const offset = event.key === 'ArrowRight' ? 1 : -1;
+          const next = noteTabs[(index + offset + noteTabs.length) % noteTabs.length];
+          selectNoteTab(next.dataset.noteTab, true);
+        });
+      });
+      if ('IntersectionObserver' in window && sections.length) {
+        const observer = new IntersectionObserver(entries => {
+          const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (!visible) return;
+          const activeLink = links.find(link => link.getAttribute('href') === `#${visible.target.id}`);
+          if (activeLink) markActive(activeLink);
+        }, {rootMargin: '-18% 0px -62% 0px', threshold: [0, .2, .5, .8]});
+        sections.forEach(section => observer.observe(section));
+      }
+      if (links.length) markActive(links[0]);
+      selectNoteTab('terms');
+
+      function openLightbox(image) {
+        returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        lightboxImage.src = image.currentSrc || image.src;
+        lightboxImage.alt = image.alt;
+        lightbox.classList.add('open');
+        lightbox.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('lightbox-open');
+        closeButton.focus({preventScroll: true});
+      }
+
+      function closeLightbox() {
+        if (!lightbox.classList.contains('open')) return;
+        lightbox.classList.remove('open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('lightbox-open');
+        lightboxImage.removeAttribute('src');
+        const target = returnFocus;
+        returnFocus = null;
+        if (target && typeof target.focus === 'function') requestAnimationFrame(() => target.focus({preventScroll: true}));
+      }
+
+      document.querySelectorAll('[data-zoom]').forEach(image => {
+        image.addEventListener('click', () => openLightbox(image));
+        image.addEventListener('keydown', event => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          openLightbox(image);
+        });
+      });
+      closeButton.addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', event => { if (event.target === lightbox) closeLightbox(); });
+      document.addEventListener('keydown', event => {
+        if (!lightbox.classList.contains('open')) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeLightbox();
+          return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusable = [closeButton, lightboxImage];
+        const current = focusable.indexOf(document.activeElement);
+        const next = event.shiftKey ? (current <= 0 ? focusable.length - 1 : current - 1) : (current === focusable.length - 1 ? 0 : current + 1);
+        event.preventDefault();
+        focusable[next].focus({preventScroll: true});
+      });
+
+      // An optional local MathJax bundle may expose this startup promise. If
+      // it fails or is absent, the readable .formula-fallback stays visible.
+      if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+        window.MathJax.startup.promise.then(() => { document.body.classList.add('mathjax-ready'); renderNotes(); }).catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>
