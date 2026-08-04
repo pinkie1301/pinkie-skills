@@ -37,24 +37,25 @@ Provide exactly three switches in this order: `專有名詞`, `公式涵義`, an
 
 MathJax is a progressive enhancement only—the guide must be fully readable without it.
 
-**MathJax setup (required).** Place exactly these two tags at the end of `<head>`, before `</head>`:
+**MathJax setup (required).** Place exactly these tags in `<head>`, before `</head>`:
 
 ```html
-<script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]]}}</script>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    startup: {
+      pageReady: () => {
+        return MathJax.startup.defaultPageReady().then(() => {
+          document.body.classList.add('mathjax-ready');
+        });
+      }
+    }
+  };
+</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 ```
 
-Then add the startup-promise listener in the inline script block that already handles TOC and lightbox:
-
-```js
-if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
-  window.MathJax.startup.promise
-    .then(() => { document.body.classList.add('mathjax-ready'); renderNotes(); })
-    .catch(() => {});
-}
-```
-
-The CSS in the blank template already hides `.mathjax-formula` and shows `.formula-fallback` by default, then swaps them only when `body.mathjax-ready` is present. Do not alter this pattern.
+The CSS in the blank template hides `.mathjax-formula` and displays `.formula-fallback` by default. When MathJax finishes typesetting, `startup.pageReady` automatically adds `body.mathjax-ready`, which hides `.formula-fallback` and reveals `.mathjax-formula`. If MathJax fails to load (e.g. offline/blocked CDN), the readable `.formula-fallback` remains cleanly visible.
 
 **Inline mathematical symbols in prose.** Use HTML semantic elements — `<var>` for variable names, `<sub>` for subscripts, `<sup>` for superscripts — to render inline symbols. These require no JavaScript and degrade gracefully in all environments. For example:
 

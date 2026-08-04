@@ -13,9 +13,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{TITLE}}</title>
-  <!-- Optional: add a locally bundled MathJax script here before the guide
-       bundle, for example <script src="{{MATHJAX_LOCAL_SRC}}"></script>.
-       Formula fallbacks remain visible until MathJax reports success. -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      startup: {
+        pageReady: () => {
+          return MathJax.startup.defaultPageReady().then(() => {
+            document.body.classList.add('mathjax-ready');
+          });
+        }
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <style>
     :root {
       --bg: #f5f7f3;
@@ -515,12 +525,6 @@
         event.preventDefault();
         focusable[next].focus({preventScroll: true});
       });
-
-      // An optional local MathJax bundle may expose this startup promise. If
-      // it fails or is absent, the readable .formula-fallback stays visible.
-      if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
-        window.MathJax.startup.promise.then(() => { document.body.classList.add('mathjax-ready'); renderNotes(); }).catch(() => {});
-      }
     })();
   </script>
 </body>
