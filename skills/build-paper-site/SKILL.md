@@ -56,16 +56,27 @@ if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) 
 
 The CSS in the blank template already hides `.mathjax-formula` and shows `.formula-fallback` by default, then swaps them only when `body.mathjax-ready` is present. Do not alter this pattern.
 
-**No inline LaTeX in prose.** Never place `\( ... \)` or `$ ... $` LaTeX directly inside `<p>` or `<li>` body text. Inline LaTeX has no fallback mechanism; if MathJax fails or is blocked, the raw source is exposed. Instead, write the mathematical relationship in plain Chinese or English prose, and reserve LaTeX for named `.equation` blocks only.
+**Inline mathematical symbols in prose.** Use HTML semantic elements — `<var>` for variable names, `<sub>` for subscripts, `<sup>` for superscripts — to render inline symbols. These require no JavaScript and degrade gracefully in all environments. For example:
 
-**Human-readable `.formula-fallback`.** Every `.equation` block requires a `.formula-fallback` sibling. Its content must be plain text a reader can understand without any math rendering—not raw LaTeX copied from the paper. Use words and Unicode symbols (≥, ×, subscript notation, etc.) where helpful. For example:
+```html
+<!-- ✓ correct: HTML semantic markup -->
+相機 Token <var>t</var><sub><var>g<sub>i</sub></var></sub>
+不確定性圖 <var>Σ</var><sub><var>D<sub>i</sub></var></sub>
+
+<!-- ✗ wrong: pseudo-math notation -->
+相機 Token t̂_{g_i}
+不確定性圖 Σ_{D_i}
+```
+
+Never use bare LaTeX-style subscript/superscript syntax (`_{...}`, `^{...}`) or Unicode-combining-character hacks in plain text. These are neither valid LaTeX (MathJax ignores them) nor valid HTML (browsers render them literally). If an expression is too complex for `<var>`/`<sub>`/`<sup>` markup, move it into a named `.equation` block instead of forcing it inline.
+
+**Human-readable `.formula-fallback`.** Every `.equation` block requires a `.formula-fallback` sibling. Its content must be plain text a reader can understand without any math rendering — not raw LaTeX copied from the paper. Use words, Unicode math operators (≥, ×, →), and natural subscript spelling where helpful. For example:
 - ❌ `\mathcal{L} = \mathcal{L}_{camera} + \mathcal{L}_{depth} + ...`
-- ✓ `總損失 L = L_camera + L_depth + L_pmap + 0.05 × L_track`
+- ✓ `總損失 L = L(camera) + L(depth) + L(pmap) + 0.05 × L(track)`
 
 **Right-rail formula body must be self-sufficient.** The `body` of every right-rail formula item must fully explain the formula in plain prose so that even if its `title` LaTeX fails to render, the reader still understands the equation's meaning, symbols, and direction of change.
 
 ## Required evidence links
-
 
 Use `data-claim-id` and `data-evidence-ids` on claim prose. Every formula, `figure`, `table`, and technical block needs direct `data-evidence-ids` plus a descendant `.evidence-badge`. The badge visibly shows one canonical direct `source_locator`: page or page range as `p.1` / `p.1 - p.2`, figure as `fig. 3`, table as `table 4`, or a paper chapter as `3.1 <chapter_title>`. Preserve this lowercase punctuation and spacing exactly. `data-evidence-kind` remains machine-readable but is not the reader-facing label.
 
