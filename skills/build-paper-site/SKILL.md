@@ -25,6 +25,14 @@ Build one portable paper-guide website (`<paper_short_name>_navigator.html`) and
 6. **Validate.** Run the strict checker and fixture suite. When changing layout, smoke-test completed output at `1600×1000` and `800×1000`, checking TOC/anchors, source locators, lightbox, cropped assets, MathJax fallback, and no page-level horizontal overflow.
 7. **Deliver.** Report artifact paths, validation results, viewport sizes, and any `not reported` or `unverified` boundaries.
 
+## Prose semantic accents & color system
+
+Maintain comfortable readability while highlighting key concepts in main prose:
+
+- **專有名詞 (Terms)**: Wrap technical terms in `<strong>` or `<strong class="term">`. Rendered in earthy terracotta brown-red (`#8b3a2b`, bold 700, no background color) to distinctly highlight key terms.
+- **變數與微型算式 (Variables & Math)**: Wrap inline variables, parameters, and micro-expressions in `<var>` or `<code class="var">`. Rendered in body text color (`color: inherit`, `font-weight: 600`, same font family, no background color) to provide subtle semibold emphasis.
+- **論文引用 (Citations)**: Wrap inline citation numbers in `<span class="cite">[130]</span>`. Rendered in quiet muted gray (`#627067`, font-size `0.88em`, normal weight, no background color) so inline citations remain subtle and do not disrupt sentence reading flow.
+
 ## Inline paper citations
 
 When prose cites another paper, write its bracketed bibliography number directly in the sentence, for example `[1]`, `[12]`, or `[130]`. Keep it as ordinary inline text; do not render it as an `.evidence-badge` or pull it out like a page, figure, table, equation, or paper-chapter locator. Use the bibliography number assigned by the source paper and preserve each number consistently within the guide. Every inline citation number used in a section must have one matching full entry in that section's right-rail `citations` array, and every listed entry must be used by that section.
