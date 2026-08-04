@@ -1,6 +1,9 @@
 # Publish only build-paper-site.
 /*
 !/.gitignore
+!/.agents/
+/.agents/*
+!/.agents/AGENTS.md
 !/skills/
 /skills/*
 !/skills/build-paper-site/

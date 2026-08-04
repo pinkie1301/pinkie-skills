@@ -69,7 +69,9 @@ class NegativeFixtureTests(unittest.TestCase):
         "invalid_paper_evidence_without_page.html": "verified paper-stated evidence requires source_pages",
         "invalid_missing_notes_data.html": "notes-data JSON is missing",
         "invalid_note_item_body.html": "body must be a non-empty string",
-        "invalid_note_tabs.html": "right explanation rail requires exactly two tabs in order: terms, formulas",
+        "invalid_note_tabs.html": "right explanation rail requires exactly three tabs in order: terms, formulas, citations",
+        "invalid_citation_format.html": "must begin with [number] and contain a full bibliography entry",
+        "invalid_missing_citation_entry.html": "uses inline citation [130] without a matching bibliography entry",
         "invalid_inline_explainer.html": "inline background notes are removed",
     }
 
@@ -92,7 +94,7 @@ class TemplateNeutralityTests(unittest.TestCase):
         for token in ("#overview", "#context", "#problem", "#approach", "#setup", "#results", "#discussion", "#conclusion", "data-depth-preset", "background-note", "eq-explain"):
             with self.subTest(token=token):
                 self.assertNotIn(token, source)
-        for token in ("notesPanel", 'data-note-tab="terms"', 'data-note-tab="formulas"', "專有名詞", "公式涵義", "notes-data", "{{NOTES_JSON}}"):
+        for token in ("notesPanel", 'data-note-tab="terms"', 'data-note-tab="formulas"', 'data-note-tab="citations"', "專有名詞", "公式涵義", "引用", "notes-data", "{{NOTES_JSON}}"):
             with self.subTest(token=token):
                 self.assertIn(token, source)
         for toc_label in ("背景", "問題定義", "研究方法", "實驗設計", "實驗結果", "結論"):

@@ -2,7 +2,7 @@
 
 ## Two separate contracts
 
-The **visual/layout contract** is fixed: a left TOC, one main reading panel, a right explanation rail, consistent type scale and quiet research-document colors, evidence badges, formula fallbacks, cropped figure/table assets, accessible image lightbox, and local assets. The right rail has exactly two switches, `專有名詞` and `公式涵義`; it has no figures/evidence/review tabs and no `概覽／研讀／深入` display presets. At `1600×1000` and `800×1000`, the TOC, main content, and explanation rail remain available without page-level horizontal overflow.
+The **visual/layout contract** is fixed: a left TOC, one main reading panel, a right explanation rail, consistent type scale and quiet research-document colors, evidence badges, formula fallbacks, cropped figure/table assets, accessible image lightbox, and local assets. The right rail has exactly three switches, `專有名詞`, `公式涵義`, and `引用`; it has no figures/evidence/review tabs and no `概覽／研讀／深入` display presets. At `1600×1000` and `800×1000`, the TOC, main content, and explanation rail remain available without page-level horizontal overflow.
 
 The **paper-specific editorial plan** is not fixed: section IDs, titles, number, order, paragraph shape, content hierarchy, and which figures/tables/formulas appear all come from the paper. Use the following only as a practical starting point for the left TOC:
 
@@ -53,11 +53,13 @@ Evidence and claims use the fixed fields enforced by the validator. Evidence add
 
 Use lowercase `p.`, `fig.`, and `table`; put one space on each side of the range hyphen; do not use `p1~p2`, `Fig. 3`, `Table 4`, or combine several locators into one string. Put additional direct locators in `refs`. A locator is never just a kind label such as 「論文明述」. `data-evidence-kind` retains `paper-stated`, `derived`, or `guide-inference` for machines. Evidence and claims must be non-empty, unique, used in the HTML, and section-consistent.
 
-## Writing and right-rail explanations
+## Writing, citations, and right-rail explanations
 
 Explain the paper's mechanism, assumptions, units, and evidence in the main reading panel. Move only reusable prerequisite concepts and formula meanings into the section-aware right rail. Do not leave the same function in `.background-note`, `.eq-explain`, parenthetical mini-glossaries, or duplicated prose.
 
-The `notes-data` JSON object has exactly the same section keys as the guide. Every section record has `terms` and `formulas` arrays. Each item has only `title` and `body`:
+When a sentence cites a paper from the source paper's bibliography, put the source bibliography number directly in the prose as ordinary bracketed text: `[1]`, `[12]`, or `[130]`. Do not turn these numbers into evidence badges or separate page/figure/table-style annotations. Keep the source paper's numbering. In each section, the set of inline bracketed citation numbers must exactly match the bibliography entries listed under that section's `citations` data.
+
+The `notes-data` JSON object has exactly the same section keys as the guide. Every section record has `terms`, `formulas`, and `citations` arrays. Term and formula items have only `title` and `body`. Citation items are full bibliography strings that begin with the matching bracketed number:
 
 ```json
 {
@@ -67,12 +69,15 @@ The `notes-data` JSON object has exactly the same section keys as the guide. Eve
     ],
     "formulas": [
       {"title": "$\\mathcal{L}_{geo}$", "body": "幾何損失；數值降低表示預測位置與幾何監督更一致。"}
+    ],
+    "citations": [
+      "[130] Yuesong Wang, Zhaojie Zeng, Tao Guan, Wei Yang, Zhuo Chen, Wenkai Liu, Luoyuan Xu, and Yawei Luo. Adaptive patch deformation for textureless-resilient multi-view stereo. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023."
     ]
   }
 }
 ```
 
-Render both types as cards with a short heading followed by explanatory prose. A formula heading may be a LaTeX function or equation name. Its body explains symbols, purpose, direction of change, and any stated assumptions; it does not merely restate the formula. Use an empty array when the paper has nothing legitimate to add. State evidence directly, remove filler and promotional claims, and never change quoted notation, measurements, equation structure, evidence kind, or source boundaries.
+Render terms and formulas as cards with a short heading followed by explanatory prose. Render each citation as compact small text, without a redundant title, so long bibliography entries remain readable without filling the rail. A formula heading may be a LaTeX function or equation name. Its body explains symbols, purpose, direction of change, and any stated assumptions; it does not merely restate the formula. Use an empty array when the paper has nothing legitimate to add. State evidence directly, remove filler and promotional claims, and never change quoted notation, measurements, equation structure, evidence kind, source boundaries, or bibliography numbering.
 
 ## Formulas, figures, and tables
 
@@ -90,4 +95,4 @@ python3 skills/build-paper-site/tests/build_fixtures.py
 python3 -m unittest discover -s skills/build-paper-site/tests -p 'test_*.py' -v
 ```
 
-Strict validation checks unique IDs, local paths and alt text, manifest/HTML/TOC order alignment, matching `3.1 <chapter_title>` labels, canonical source-locator spelling, section coverage notices, claim/evidence links, the two-tab right rail and `notes-data` schema, removal of duplicate inline background/formula explanations, cropped artifact metadata and local assets, formula fallbacks, accessibility basics, and prohibited depth UI. It does not prescribe the number or names of paper sections.
+Strict validation checks unique IDs, local paths and alt text, manifest/HTML/TOC order alignment, matching `3.1 <chapter_title>` labels, canonical source-locator spelling, section coverage notices, claim/evidence links, the three-tab right rail and `notes-data` schema, section-local inline citation/bibliography matching, removal of duplicate inline background/formula explanations, cropped artifact metadata and local assets, formula fallbacks, accessibility basics, and prohibited depth UI. It does not prescribe the number or names of paper sections.

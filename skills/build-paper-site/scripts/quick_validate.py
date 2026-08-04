@@ -22,8 +22,10 @@ PAPER_TYPES = {"empirical", "theory", "survey", "dataset", "hci"}
 COVERAGE_STATUSES = {"present", "not reported", "not applicable", "unverified"}
 EVIDENCE_KINDS = {"paper-stated", "derived", "guide-inference"}
 EVIDENCE_STATUSES = {"verified", "unverified", "not reported"}
-NOTE_TABS = ("terms", "formulas")
+NOTE_TABS = ("terms", "formulas", "citations")
 NOTE_ITEM_FIELDS = {"title", "body"}
+CITATION_MARKER_PATTERN = re.compile(r"\[(\d+)\]")
+CITATION_ENTRY_PATTERN = re.compile(r"^\[(\d+)\]\s+(.{20,})$")
 SOURCE_LOCATOR_PATTERN = re.compile(
     r"^(?:p\.\d+(?: - p\.\d+)?|fig\. \d+[a-z]?|table \d+[a-z]?|eq\. \d+[a-z]?|\d+\.\d+ .+)$"
 )
@@ -481,8 +483,8 @@ def check_notes_contract(
     tabs = [element for element in parser.elements if "data-note-tab" in element.attrs]
     tab_names = tuple(element.attrs.get("data-note-tab", "") for element in tabs)
     if tab_names != NOTE_TABS:
-        add_error(errors, "right explanation rail requires exactly two tabs in order: terms, formulas")
-    expected_labels = {"terms": "專有名詞", "formulas": "公式涵義"}
+        add_error(errors, "right explanation rail requires exactly three tabs in order: terms, formulas, citations")
+    expected_labels = {"terms": "專有名詞", "formulas": "公式涵義", "citations": "引用"}
     for tab in tabs:
         name = tab.attrs.get("data-note-tab", "")
         if tab.tag != "button" or tab.attrs.get("role") != "tab":
@@ -509,13 +511,14 @@ def check_notes_contract(
         add_error(errors, f"notes-data has unknown sections: {', '.join(extra)}")
 
     item_count = 0
+    citation_numbers: dict[str, set[str]] = {}
     for section, value in payload.items():
         label = f"notes-data.{section}"
         if not isinstance(value, dict):
             add_error(errors, f"{label} must be an object")
             continue
         check_exact_fields(value, set(NOTE_TABS), label, errors)
-        for tab_name in NOTE_TABS:
+        for tab_name in ("terms", "formulas"):
             items = value.get(tab_name)
             if not isinstance(items, list):
                 add_error(errors, f"{label}.{tab_name} must be an array")
@@ -531,8 +534,41 @@ def check_notes_contract(
                     field_value = item.get(field_name)
                     if not isinstance(field_value, str) or not field_value.strip():
                         add_error(errors, f"{item_label}.{field_name} must be a non-empty string")
+        citations = value.get("citations")
+        if not isinstance(citations, list):
+            add_error(errors, f"{label}.citations must be an array")
+            continue
+        item_count += len(citations)
+        seen_numbers: set[str] = set()
+        citation_numbers[section] = seen_numbers
+        for index, item in enumerate(citations, start=1):
+            item_label = f"{label}.citations[{index}]"
+            if not isinstance(item, str):
+                add_error(errors, f"{item_label} must be a full bibliography string")
+                continue
+            match = CITATION_ENTRY_PATTERN.fullmatch(item.strip())
+            if not match:
+                add_error(errors, f"{item_label} must begin with [number] and contain a full bibliography entry")
+                continue
+            number = match.group(1)
+            if number in seen_numbers:
+                add_error(errors, f"{label}.citations has duplicate bibliography number [{number}]")
+            seen_numbers.add(number)
+
+    for section in parser.sections:
+        prose = " ".join(
+            element.text
+            for element in parser.elements
+            if element.section_id == section and element.tag in {"p", "li"}
+        )
+        inline_numbers = set(CITATION_MARKER_PATTERN.findall(prose))
+        listed_numbers = citation_numbers.get(section, set())
+        for number in sorted(inline_numbers - listed_numbers, key=int):
+            add_error(errors, f"section {section} uses inline citation [{number}] without a matching bibliography entry")
+        for number in sorted(listed_numbers - inline_numbers, key=int):
+            add_error(errors, f"section {section} lists bibliography entry [{number}] without an inline citation")
     if strict and item_count == 0:
-        add_error(errors, "notes-data must contain at least one term or formula explanation")
+        add_error(errors, "notes-data must contain at least one term, formula, or citation item")
 
 
 def split_ids(value: str) -> list[str]:
