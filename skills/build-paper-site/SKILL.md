@@ -5,7 +5,7 @@ description: Build evidence-linked guide websites for computing and information-
 
 # Build Paper Site
 
-Build one portable paper-guide website and a sibling asset folder. Claims must remain traceable to the PDF. Write in Traditional Chinese by default while preserving model names, formula symbols, metrics, numerical values, and the paper's figure/table/equation numbers; normalize only their reader-visible locator spelling as specified below.
+Build one portable paper-guide website (`<paper_short_name>_navigator.html`) and a sibling asset folder (`<paper_short_name>_navigator_assets/`), using lowercase snake_case for `<paper_short_name>` (e.g., `vggt_navigator.html` and `vggt_navigator_assets/`). Claims must remain traceable to the PDF. Write in Traditional Chinese by default while preserving model names, formula symbols, metrics, numerical values, and the paper's figure/table/equation numbers; normalize only their reader-visible locator spelling as specified below.
 
 ## Workflow
 
