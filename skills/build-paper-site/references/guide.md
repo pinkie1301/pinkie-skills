@@ -57,6 +57,88 @@ Use lowercase `p.`, `fig.`, and `table`; put one space on each side of the range
 
 Explain the paper's mechanism, assumptions, units, and evidence in the main reading panel. Move only reusable prerequisite concepts and formula meanings into the section-aware right rail. Do not leave the same function in `.background-note`, `.eq-explain`, parenthetical mini-glossaries, or duplicated prose.
 
+### Editorial organization
+
+Start with a compact overview of the problem, prior techniques, what the paper adds, its contributions, and its experimental conclusion before entering method details. The overview may appear in the hero, the opening of the first section, or a dedicated section when that fits the paper; it never forces a fixed section name or TOC position. Do not stack abstract-like summaries. Use the overview to give readers a map, then develop each point once in the body.
+
+Present the argument in this order when the paper supports it: concrete research situation → why the problem matters → where existing methods fall short → the authors' solution. Connect each section to the preceding one and anticipate the natural question created by a design choice. Aim for 4–8 paragraphs of connected prose per present section, excluding figures and structured elements; do not pad thin evidence with unrelated background.
+
+Describe a method as a data flow. State its input, the processing applied, the resulting output, why that output is needed, and where it goes next. Adapt the sequence when a paper is theoretical or does not have a literal pipeline, but always explain mechanism and dependency rather than only naming modules.
+
+Organize experiments by research or validation question instead of reproducing table order. For each experiment group, explain what it validates, how it was conducted, the result, what the result means, and its limitations. Compare values in context rather than merely restating them. Explain every included figure and formula by its functional role in the method, argument, or evidence chain.
+
+Use only the prerequisite knowledge needed to understand the paper. Keep reusable terminology and formula meanings in the right rail, preserving its current role rather than adding inline mini-glossaries. Write the main prose primarily in Traditional Chinese. Retain English only when needed for an established proper technical term, official model or dataset name, symbol, metric, or wording whose translation would reduce precision. Choose one reader-visible form for each term and use it consistently throughout; do not switch casually between a Chinese translation, an English term, and different abbreviations.
+
+When the source PDF says a component reuses, applies, or adapts an existing method, identify it as existing work and briefly explain its function in this paper. Attribute it with the source paper's bibliography number when available, and distinguish the reused part from the authors' change or contribution. The PDF and its bibliography remain the only provenance boundary: do not search externally, invent missing attribution, or infer that an unattributed component is novel.
+
+End with a self-sufficient conclusion from which a reader can restate the problem, method, supporting evidence, and limitations without rereading the guide.
+
+### Voice and paragraph structure
+
+Use the combined voice of a graduate seminar presentation and a textbook walkthrough. Keep it professional, natural, concise, and focused on explaining the paper. Avoid casual chatter, ceremonial academic phrasing, and unnecessary abstraction.
+
+Open each paragraph with its main point or judgment, then supply the reason, evidence, and significance. Treat this as topic-sentence-first writing; it does not move a paper's final result ahead of the problem context needed to understand it. Keep each sentence to one or two closely related ideas, and keep each paragraph on one topic. Reduce stacked abstract nouns and nested parentheses. Use simple transitions such as `具體來說` or `需要注意的是` only when they clarify the progression, and vary or remove them when they become repetitive.
+
+Explain complex concepts in the order intuition → definition → function → relationship to the surrounding process. Keep reusable formal definitions in the right rail. In the main prose, include a method-specific definition only when the argument cannot proceed without it, and do not duplicate that explanation in the rail. Use a simple analogy only when it establishes useful intuition, then return immediately to the technical mechanism and its limits.
+
+Do not personify a model or system with phrases such as `模型知道`, `模型看懂`, or `模型認為`. Describe the observable computation instead: the representation encodes information, an attention operation assigns weights, or an output supports a later decision.
+
+State quantitative results with the metric, comparison target, and direction or size of the difference. Avoid vague claims such as `大幅提升` when the paper provides an exact value. Keep praise and criticism proportionate to the reported evidence.
+
+### Taiwan terminology and naming
+
+Write authored prose in Traditional Chinese using Taiwan academic and engineering usage. On first mention, use `中文（English, abbreviation）` when a stable Taiwan translation and useful abbreviation both exist, such as `鳥瞰視角（bird's-eye view, BEV）`. This parenthetical establishes naming only; the right rail retains the full explanation. Afterward, choose the Chinese term or abbreviation and use it consistently.
+
+Allow an English-dominant technical term such as `token` or `embedding`, and official model, module, benchmark, or dataset names, to remain in English from first mention when a forced translation would reduce clarity. Do not alternate later among an invented Chinese translation, the English form, and multiple abbreviations.
+
+Use these Taiwan-preferred mappings as the default for authored prose:
+
+| English | Taiwan usage |
+| --- | --- |
+| retrieval | 檢索 |
+| feature | 特徵 |
+| training | 訓練 |
+| inference | 推論 |
+| label | 標註 |
+| annotation | 標註資料 |
+| accuracy | 準確率 |
+| performance | 表現 |
+| optimization | 最佳化 |
+| architecture | 架構 |
+| framework | 框架 |
+| pipeline | 流程 |
+| backbone | 主幹網路 |
+| ground truth | 真實標註 |
+| evaluation | 評估 |
+| experiment | 實驗 |
+
+Use `資料`, `網路`, `最佳化`, and `穩健性` instead of `數據`, `網絡`, `優化`, and `魯棒性`. `訓練集` and `測試集` are acceptable, while `訓練資料` and `測試資料` are preferred. `目標函數` is acceptable when used consistently. Preserve official names, direct quotations, bibliography entries, formulas, code, and machine-readable values exactly when normalization would alter the source.
+
+### Attribution and critical analysis
+
+Attribute source content with forms such as `論文指出` or `作者提出`. Mark interpretation with calibrated forms such as `可以觀察到` or `這可能表示`. Do not turn a possibility into a fact.
+
+Base criticism on cited evidence, experimental design, and stated limitations. Focus on evidence sufficiency, comparison fairness, and scope of applicability. Avoid generic praise or criticism that cannot be traced to the paper.
+
+### Negative-contrast prohibition
+
+In authored visible guide prose, directly state the correct view and then add its reason or boundary. Do not use negative-contrast constructions, including `不是…而是…`, `並非…而是…`, `重點不是…而是…`, or `與其說…不如說…`. Apply this prohibition to main prose, captions, table interpretation, formula explanations, right-rail terms and formulas, conclusions, and criticism. Preserve official titles and names, direct quotations, bibliography entries, formulas, code, and machine-readable status values.
+
+### Prohibited writing patterns
+
+- Do not introduce dense terminology, models, or formulas before establishing the problem and why it matters.
+- Do not pile up summaries or repeat an abstract in several forms.
+- Do not present reused models or methods as the paper's innovation.
+- Do not list module names without explaining information flow and dependencies.
+- Do not merely translate captions, formulas, or table values; explain their function and meaning.
+- Do not blur paper-stated facts, derivations, and guide inferences.
+- Do not overmix English terminology with Traditional Chinese prose or vary the rendering of the same term.
+- Do not use non-Taiwan defaults such as `數據`, `網絡`, `優化`, or `魯棒性` in authored prose.
+- Do not personify models, use unsupported superlatives, or describe numerical gains without their metric and comparison target.
+- Do not use a negative-contrast construction to frame the correct interpretation.
+- Do not repeat explanations across the main prose and right rail, or add background that does not help interpret the paper.
+- Do not render empty headings, paragraphs, cards, citation items, placeholder-only blocks, or sections without substantive body content. Empty `terms`, `formulas`, or `citations` arrays remain valid when a section legitimately has no item; render the existing explicit empty state instead of an empty content card.
+
 When a sentence cites a paper from the source paper's bibliography, put the source bibliography number directly in the prose as ordinary bracketed text: `[1]`, `[12]`, or `[130]`. Do not turn these numbers into evidence badges or separate page/figure/table-style annotations. Keep the source paper's numbering. In each section, the set of inline bracketed citation numbers must exactly match the bibliography entries listed under that section's `citations` data.
 
 The `notes-data` JSON object has exactly the same section keys as the guide. Every section record has `terms`, `formulas`, and `citations` arrays. Term and formula items have only `title` and `body`. Citation items are full bibliography strings that begin with the matching bracketed number:

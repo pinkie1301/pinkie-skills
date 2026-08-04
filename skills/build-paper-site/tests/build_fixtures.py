@@ -111,6 +111,14 @@ def main() -> None:
     valid = {kind: build_manifest(kind, "scope" if kind == "theory" else None) for kind in PAPER_TYPES}
     for kind, manifest in valid.items(): write_fixture(f"valid_{kind}.html", manifest)
     base = valid["empirical"]
+    write_fixture(
+        "valid_style_exclusions.html",
+        base,
+        [
+            ("<h2>研究問題</h2>", "<h2>研究問題</h2><blockquote>原文直接引述：這不是分類，而是數據排序。</blockquote>"),
+            ("A complete bibliography entry for the 研究問題 fixture.", "不是分類而是數據優化的原始書名。"),
+        ],
+    )
     case = copy.deepcopy(base); case["evidence"] = []; write_fixture("invalid_empty_evidence.html", case)
     case = copy.deepcopy(base); case["claims"] = []; write_fixture("invalid_empty_claims.html", case, [(" data-claim-id=\"claim-question\"", ""), (" data-claim-id=\"claim-method\"", ""), (" data-claim-id=\"claim-evidence\"", "")])
     case = copy.deepcopy(base); case["evidence"].append(copy.deepcopy(case["evidence"][0])); write_fixture("invalid_duplicate_evidence_id.html", case)
@@ -144,6 +152,32 @@ def main() -> None:
     write_fixture("invalid_citation_format.html", base, [('[1] A. Author and B. Researcher.', 'A. Author and B. Researcher.')])
     write_fixture("invalid_missing_citation_entry.html", base, [('相關研究 [1]', '相關研究 [130]')])
     write_fixture("invalid_inline_explainer.html", base, [('<p data-claim-id="claim-question"', '<p class="background-note" data-claim-id="claim-question"')])
+    write_fixture("invalid_empty_heading.html", base, [("<h2>研究問題</h2>", "<h2> </h2>")])
+    question_section = build_section("question", "研究問題", base, 1)
+    empty_question_section = '<section id="question" data-title="1.1 研究問題"><div class="chapter-label" data-chapter-label>1.1 研究問題</div><h2>研究問題</h2></section>'
+    write_fixture("invalid_empty_section.html", base, [(question_section, empty_question_section)])
+    write_fixture(
+        "invalid_empty_paragraph.html",
+        base,
+        [("<p data-claim-id=\"claim-question\" data-evidence-ids=\"ev-question\">研究問題以完整段落說明背景、方法或結果，並引用相關研究 [1]；專有名詞、公式涵義與完整書目由同章右欄補充。", '<p data-claim-id="claim-question" data-evidence-ids="ev-question">')],
+    )
+    note_body = '<div id="noteBody" role="tabpanel" aria-labelledby="termsTab"></div>'
+    write_fixture("invalid_empty_note_card.html", base, [(note_body, f'{note_body}<article class="note-card"></article>')])
+    write_fixture("invalid_empty_citation_item.html", base, [(note_body, f'{note_body}<p class="citation-item"></p>')])
+    style_source = "研究問題以完整段落說明背景、方法或結果"
+    write_fixture("invalid_contrast_not_but.html", base, [(style_source, "這不是分類問題，而是排序問題")])
+    write_fixture("invalid_contrast_not_really_but.html", base, [(style_source, "這並非分類問題，而是排序問題")])
+    write_fixture("invalid_contrast_focus.html", base, [(style_source, "重點不是參數量，而是比較條件")])
+    write_fixture("invalid_contrast_rather.html", base, [(style_source, "與其說是分類，不如說是排序")])
+    write_fixture("invalid_term_data.html", base, [(style_source, "模型使用多視角數據進行訓練")])
+    write_fixture("invalid_term_network.html", base, [(style_source, "這個網絡會產生特徵表示")])
+    write_fixture("invalid_term_optimize.html", base, [(style_source, "損失函數用於優化模型參數")])
+    write_fixture("invalid_term_robustness.html", base, [(style_source, "實驗用於測量方法的魯棒性")])
+    write_fixture(
+        "invalid_note_style.html",
+        base,
+        [('"body":"解釋研究問題段落閱讀時需要先理解的專有概念。"', '"body":"重點不是速度，而是準確率。"')],
+    )
 
 
 if __name__ == "__main__": main()

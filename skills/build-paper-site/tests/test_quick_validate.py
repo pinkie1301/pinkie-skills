@@ -37,6 +37,10 @@ class PositiveFixtureTests(unittest.TestCase):
         result = validate("valid_empirical.html")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_style_exclusions_preserve_quoted_and_bibliography_text(self) -> None:
+        result = validate("valid_style_exclusions.html")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 class NegativeFixtureTests(unittest.TestCase):
     CASES = {
@@ -73,6 +77,20 @@ class NegativeFixtureTests(unittest.TestCase):
         "invalid_citation_format.html": "must begin with [number] and contain a full bibliography entry",
         "invalid_missing_citation_entry.html": "uses inline citation [130] without a matching bibliography entry",
         "invalid_inline_explainer.html": "inline background notes are removed",
+        "invalid_empty_heading.html": "empty rendered h2 in section question",
+        "invalid_empty_paragraph.html": "empty rendered p in section question",
+        "invalid_empty_note_card.html": "empty rendered note card",
+        "invalid_empty_citation_item.html": "empty rendered citation item",
+        "invalid_empty_section.html": "section question has no substantive body content",
+        "invalid_contrast_not_but.html": "prohibited negative-contrast construction: 不是…而是…",
+        "invalid_contrast_not_really_but.html": "prohibited negative-contrast construction: 並非…而是…",
+        "invalid_contrast_focus.html": "prohibited negative-contrast construction: 重點不是…而是…",
+        "invalid_contrast_rather.html": "prohibited negative-contrast construction: 與其說…不如說…",
+        "invalid_term_data.html": "uses non-Taiwan term 數據; use 資料",
+        "invalid_term_network.html": "uses non-Taiwan term 網絡; use 網路",
+        "invalid_term_optimize.html": "uses non-Taiwan term 優化; use 最佳化",
+        "invalid_term_robustness.html": "uses non-Taiwan term 魯棒性; use 穩健性",
+        "invalid_note_style.html": "notes-data.question.terms[1].body uses prohibited negative-contrast construction",
     }
 
     def test_invalid_fixtures_fail_for_expected_reason(self) -> None:

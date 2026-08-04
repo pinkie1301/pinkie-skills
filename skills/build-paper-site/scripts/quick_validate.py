@@ -26,6 +26,18 @@ NOTE_TABS = ("terms", "formulas", "citations")
 NOTE_ITEM_FIELDS = {"title", "body"}
 CITATION_MARKER_PATTERN = re.compile(r"\[(\d+)\]")
 CITATION_ENTRY_PATTERN = re.compile(r"^\[(\d+)\]\s+(.{20,})$")
+PROHIBITED_CONTRAST_PATTERNS = (
+    ("重點不是…而是…", re.compile(r"重點不是[^。！？!?]{0,160}而是")),
+    ("並非…而是…", re.compile(r"並非[^。！？!?]{0,160}而是")),
+    ("與其說…不如說…", re.compile(r"與其說[^。！？!?]{0,160}不如說")),
+    ("不是…而是…", re.compile(r"不是[^。！？!?]{0,160}而是")),
+)
+PROHIBITED_TAIWAN_TERMS = {
+    "數據": "資料",
+    "網絡": "網路",
+    "優化": "最佳化",
+    "魯棒性": "穩健性",
+}
 SOURCE_LOCATOR_PATTERN = re.compile(
     r"^(?:p\.\d+(?: - p\.\d+)?|fig\. \d+[a-z]?|table \d+[a-z]?|eq\. \d+[a-z]?|\d+\.\d+ .+)$"
 )
@@ -158,6 +170,16 @@ def add_error(errors: list[str], message: str) -> None:
 
 def add_warning(warnings: list[str], message: str) -> None:
     warnings.append(message)
+
+
+def check_authored_style(text: str, label: str, errors: list[str]) -> None:
+    for construction, pattern in PROHIBITED_CONTRAST_PATTERNS:
+        if pattern.search(text):
+            add_error(errors, f"{label} uses prohibited negative-contrast construction: {construction}")
+            break
+    for term, replacement in PROHIBITED_TAIWAN_TERMS.items():
+        if term in text:
+            add_error(errors, f"{label} uses non-Taiwan term {term}; use {replacement}")
 
 
 def is_external(value: str) -> bool:
@@ -534,6 +556,8 @@ def check_notes_contract(
                     field_value = item.get(field_name)
                     if not isinstance(field_value, str) or not field_value.strip():
                         add_error(errors, f"{item_label}.{field_name} must be a non-empty string")
+                    elif strict:
+                        check_authored_style(field_value, f"{item_label}.{field_name}", errors)
         citations = value.get("citations")
         if not isinstance(citations, list):
             add_error(errors, f"{label}.citations must be an array")
@@ -799,6 +823,51 @@ def check_content_contract(source: str, parser: GuideParser, errors: list[str], 
     for token, message in forbidden_ui.items():
         if token in source:
             add_error(errors, message)
+    if strict:
+        def substantive_text(index: int) -> str:
+            text = parser.elements[index].text
+            for candidate in parser.elements:
+                if is_descendant(candidate, index) and "evidence-badge" in candidate.classes:
+                    text = text.replace(candidate.text, "", 1)
+            return text.strip()
+
+        for index, element in enumerate(parser.elements):
+            if element.tag in {"h1", "h2", "h3", "h4", "h5", "h6", "p"} and not substantive_text(index):
+                add_error(errors, f"empty rendered {element.tag} in section {element.section_id or '<none>'}")
+            if "note-card" in element.classes and not element.text.strip():
+                add_error(errors, f"empty rendered note card in section {element.section_id or '<none>'}")
+            if "citation-item" in element.classes and not element.text.strip():
+                add_error(errors, f"empty rendered citation item in section {element.section_id or '<none>'}")
+
+        style_tags = {"h2", "h3", "h4", "h5", "h6", "p", "li", "figcaption", "td", "th"}
+        excluded_ancestor_tags = {"blockquote", "cite", "code", "pre", "script", "style"}
+        for index, element in enumerate(parser.elements):
+            if element.tag not in style_tags or "citation-item" in element.classes:
+                continue
+            ancestors = (parser.elements[ancestor] for ancestor in element.ancestors)
+            if any(ancestor.tag in excluded_ancestor_tags for ancestor in ancestors):
+                continue
+            check_authored_style(substantive_text(index), f"visible {element.tag} in section {element.section_id or '<none>'}", errors)
+
+        substantive_tags = {"p", "figure", "table", "blockquote", "pre", "ul", "ol", "canvas"}
+        for section_id in parser.sections:
+            section_index = next(
+                index
+                for index, element in enumerate(parser.elements)
+                if element.tag == "section" and element.attrs.get("id") == section_id
+            )
+            substantive = any(
+                is_descendant(element, section_index)
+                and (
+                    element.tag in substantive_tags
+                    or "coverage-notice" in element.classes
+                    or "data-technical-block" in element.attrs
+                )
+                and (substantive_text(index) or element.tag in {"figure", "table", "canvas"})
+                for index, element in enumerate(parser.elements)
+            )
+            if not substantive:
+                add_error(errors, f"section {section_id} has no substantive body content")
     equations = [element for element in parser.elements if "equation" in element.classes]
     fallbacks = [element for element in parser.elements if "formula-fallback" in element.classes]
     for equation in equations:
