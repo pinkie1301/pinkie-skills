@@ -33,7 +33,39 @@ When prose cites another paper, write its bracketed bibliography number directly
 
 Provide exactly three switches in this order: `專有名詞`, `公式涵義`, and `引用`. Store their section-specific content in `notes-data` under `terms`, `formulas`, and `citations`. Term and formula items have only a short `title` and explanatory `body`; a formula title may contain its LaTeX function, while its body explains symbols, purpose, and variable relationships. Each citation item is one full bibliography string beginning with its bracketed number, for example `[130] Yuesong Wang, Zhaojie Zeng, Tao Guan, Wei Yang, Zhuo Chen, Wenkai Liu, Luoyuan Xu, and Yawei Luo. Adaptive patch deformation for textureless-resilient multi-view stereo. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2023.` Render citations as compact small text so long entries do not dominate the rail. Empty arrays are valid when a section genuinely has no item of that type. Do not repeat the same explanation in `.background-note`, `.eq-explain`, or main prose.
 
+## Formula rendering
+
+MathJax is a progressive enhancement only—the guide must be fully readable without it.
+
+**MathJax setup (required).** Place exactly these two tags at the end of `<head>`, before `</head>`:
+
+```html
+<script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]]}}</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+```
+
+Then add the startup-promise listener in the inline script block that already handles TOC and lightbox:
+
+```js
+if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+  window.MathJax.startup.promise
+    .then(() => { document.body.classList.add('mathjax-ready'); renderNotes(); })
+    .catch(() => {});
+}
+```
+
+The CSS in the blank template already hides `.mathjax-formula` and shows `.formula-fallback` by default, then swaps them only when `body.mathjax-ready` is present. Do not alter this pattern.
+
+**No inline LaTeX in prose.** Never place `\( ... \)` or `$ ... $` LaTeX directly inside `<p>` or `<li>` body text. Inline LaTeX has no fallback mechanism; if MathJax fails or is blocked, the raw source is exposed. Instead, write the mathematical relationship in plain Chinese or English prose, and reserve LaTeX for named `.equation` blocks only.
+
+**Human-readable `.formula-fallback`.** Every `.equation` block requires a `.formula-fallback` sibling. Its content must be plain text a reader can understand without any math rendering—not raw LaTeX copied from the paper. Use words and Unicode symbols (≥, ×, subscript notation, etc.) where helpful. For example:
+- ❌ `\mathcal{L} = \mathcal{L}_{camera} + \mathcal{L}_{depth} + ...`
+- ✓ `總損失 L = L_camera + L_depth + L_pmap + 0.05 × L_track`
+
+**Right-rail formula body must be self-sufficient.** The `body` of every right-rail formula item must fully explain the formula in plain prose so that even if its `title` LaTeX fails to render, the reader still understands the equation's meaning, symbols, and direction of change.
+
 ## Required evidence links
+
 
 Use `data-claim-id` and `data-evidence-ids` on claim prose. Every formula, `figure`, `table`, and technical block needs direct `data-evidence-ids` plus a descendant `.evidence-badge`. The badge visibly shows one canonical direct `source_locator`: page or page range as `p.1` / `p.1 - p.2`, figure as `fig. 3`, table as `table 4`, or a paper chapter as `3.1 <chapter_title>`. Preserve this lowercase punctuation and spacing exactly. `data-evidence-kind` remains machine-readable but is not the reader-facing label.
 
