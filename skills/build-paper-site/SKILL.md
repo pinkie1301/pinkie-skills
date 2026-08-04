@@ -7,6 +7,15 @@ description: Build evidence-linked guide websites for computing and information-
 
 Build one portable paper-guide website (`<paper_short_name>_navigator.html`) and a sibling asset folder (`<paper_short_name>_navigator_assets/`), using lowercase snake_case for `<paper_short_name>` (e.g., `vggt_navigator.html` and `vggt_navigator_assets/`). Claims must remain traceable to the PDF. Write in Traditional Chinese by default while preserving model names, formula symbols, metrics, numerical values, and the paper's figure/table/equation numbers; normalize only their reader-visible locator spelling as specified below.
 
+## Working directory
+
+Resolve the working directory before creating artifacts.
+
+1. If the source paper is in a persistent, writable folder, place all outputs in that same folder. Keep the HTML, manifest, asset folder, and reproducible build files together.
+2. If the source paper comes from a conversation attachment, temporary location, read-only location, or otherwise has no stable writable folder, ask whether to create a new folder for the work. Do not ask when the user has already specified an output folder.
+3. If a persistent folder cannot be created or the user declines, create the outputs in conversation-scoped temporary storage. In the final response, provide a clickable link to the generated HTML and state that the temporary artifact may not persist.
+4. Never deliver the HTML without its required sibling assets. Keep `<paper_short_name>_navigator.html`, `<paper_short_name>_navigator_assets/`, the manifest, and build files together.
+
 ## Workflow
 
 1. **Inspect sources.** Treat the PDF as the factual source. Use extracted text for search and prior HTML only as a visual reference.
@@ -23,7 +32,7 @@ Build one portable paper-guide website (`<paper_short_name>_navigator.html`) and
    - **Target paragraph count.** Aim for 4–8 paragraphs of connected prose per section (excluding embedded figures and structured elements). A section with only 2 short paragraphs plus a callout is too thin.
 5. **Embed artifacts.** Crop PDF renders to the actual figure or table before embedding; do not embed a whole PDF page as a figure/table. Every rendered figure or table crop has a manifest artifact record (`asset_path`, source locator, source page, bounding box) and a matching `data-artifact-id` in HTML.
 6. **Validate.** Run the strict checker and fixture suite. When changing layout, smoke-test completed output at `1600×1000` and `800×1000`, checking TOC/anchors, source locators, lightbox, cropped assets, MathJax fallback, and no page-level horizontal overflow.
-7. **Deliver.** Report artifact paths, validation results, viewport sizes, and any `not reported` or `unverified` boundaries.
+7. **Deliver.** Report artifact paths, validation results, viewport sizes, and any `not reported` or `unverified` boundaries. Report the resolved output directory. For conversation-scoped temporary output, provide a clickable HTML link and clearly disclose that the artifact may not persist.
 
 ## Prose semantic accents & color system
 
