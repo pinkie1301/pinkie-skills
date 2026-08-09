@@ -120,6 +120,18 @@ Use evidence locators at the minimum sufficient scope; avoid stacking overlappin
 
 Each section should fully develop its necessary arguments. When source information is limited, stay concise; do not pad with background unrelated to understanding the paper.
 
+### Section depth contract
+
+These are delivery requirements, not style preferences. A section that fails any applicable criterion must be expanded before the guide is validated. The validator emits a prose-density warning for sections below 200 characters of prose; use it as a triage signal, then verify against the criteria below.
+
+**Method / architecture sections** — every module, layer, loss, or processing block that the paper names must have at least one paragraph that states: (a) what information it receives, (b) what operation it performs, (c) what it outputs, and (d) why the output is needed downstream. Naming and listing symbols alone does not satisfy (a)–(d).
+
+**Formula sections** — every important formula must have a companion paragraph that explains what it computes, how its core terms combine to produce the result, and what role the result plays in the method. A Chinese restatement of the mathematical expression does not count.
+
+**Experiment sections** — every reported comparison must state the metric name, the comparison target, the direction of the difference, and the magnitude (exact value or a range read from a figure). Do not substitute vague claims such as `表現更好` or `大幅提升` for values the paper or its figures provide.
+
+**Transition requirement** — each method section ends with a synthesis paragraph: what has been established, why the next stage needs it, and how it connects to the overall goal. This paragraph links sections; it does not re-summarize the preceding text.
+
 ### Voice and paragraph structure
 
 Voice: graduate seminar + textbook walkthrough — professional, natural, concise, instructional. Avoid casual chatter, promotional language, ceremonial academic phrasing, stacked abstract nouns, and unnecessarily complex sentences.

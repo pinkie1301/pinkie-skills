@@ -795,6 +795,23 @@ def check_content_contract(
             )
             if not substantive:
                 add_error(errors, f"section {section_id} has no substantive body content")
+
+        THIN_SECTION_CHAR_THRESHOLD = 200
+        for section_id in parser.sections:
+            prose_chars = 0
+            for index, element in enumerate(parser.elements):
+                if (
+                    element.section_id == section_id
+                    and element.tag in {"p", "li"}
+                ):
+                    prose_chars += len(substantive_text(index))
+            if prose_chars < THIN_SECTION_CHAR_THRESHOLD:
+                add_warning(
+                    warnings,
+                    f"section {section_id} has only ~{prose_chars} prose characters; "
+                    f"review whether the section depth contract is satisfied",
+                )
+
     equations = [element for element in parser.elements if "equation" in element.classes]
     fallbacks = [element for element in parser.elements if "formula-fallback" in element.classes]
     for equation in equations:
