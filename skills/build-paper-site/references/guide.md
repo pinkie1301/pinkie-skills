@@ -2,7 +2,7 @@
 
 ## Contracts
 
-Preserve the template's fixed visual contract: left TOC, main reading panel, right explanation rail, evidence badges, readable formula fallbacks, cropped local figure/table assets, accessible image lightbox, and no page-level horizontal overflow at `1600×1000` or `800×1000`.
+Use [template.md](template.md) for the starter shell, placeholders, and interaction hooks.
 
 The paper-specific editorial plan is flexible. Add, remove, merge, split, or reorder sections to follow the source paper. Do not create a section only to complete a generic outline. Every TOC item and section uses the same visible `3.1 <chapter_title>` label.
 
@@ -54,7 +54,7 @@ Use `data-artifact-id` and `data-artifact-kind` on every rendered figure/table. 
 
 ## Notes and bibliography
 
-The right rail has exactly three tabs in this order: `專有名詞`, `公式涵義`, `引用`. Store notes as:
+Store section notes and one global bibliography as:
 
 ```json
 {
@@ -72,7 +72,7 @@ The right rail has exactly three tabs in this order: `專有名詞`, `公式涵�
 }
 ```
 
-Each inline `[n]` marker must appear in its section's `citations` number array and resolve through the single global `bibliography` map. Store each full bibliography entry once. Terms and formulas use only `title` and `body`; empty arrays are valid. The template renders the global entry as `[n] <entry>` in the citation tab.
+Each inline `[n]` marker must appear in its section's `citations` number array and resolve through the single global `bibliography` map. Store each full bibliography entry once. Terms and formulas use only `title` and `body`; empty arrays are valid.
 
 ## Writing
 
@@ -82,7 +82,7 @@ Write primarily in Traditional Chinese with Taiwan terminology. Keep a stable re
 
 ## Formulas and assets
 
-MathJax is progressive enhancement. Every `.equation` needs a plain-language `.formula-fallback` that remains readable offline; use `<var>`, `<sub>`, and `<sup>` for simple inline symbols. Keep figures/tables faithful to the PDF and crop them to their actual body before embedding. Do not add sortable tables or an interactive canvas/simulator without a same-section static fallback.
+Every equation needs a plain-language fallback that remains readable offline. Use `<var>`, `<sub>`, and `<sup>` for simple inline symbols. Follow [template.md](template.md) for the equation hooks. Keep figures/tables faithful to the PDF and crop them to their actual body before embedding. Do not add sortable tables or an interactive canvas/simulator without a same-section static fallback.
 
 ## Validation
 
