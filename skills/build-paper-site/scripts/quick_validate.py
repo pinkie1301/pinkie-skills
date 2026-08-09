@@ -40,7 +40,7 @@ PROHIBITED_TAIWAN_TERMS = {
 SOURCE_LOCATOR_PATTERN = re.compile(
     r"^(?:p\.\d+(?: - p\.\d+)?|fig\. \d+[a-z]?|table \d+[a-z]?|eq\. \d+[a-z]?|\d+\.\d+ .+)$"
 )
-CHAPTER_LABEL_PATTERN = re.compile(r"^\d+\.\d+\s+\S.*$")
+SECTION_LABEL_PATTERN = re.compile(r"^[1-9]\d*\.[1-9]\d*\s+\S.*$")
 EVIDENCE_FIELDS = {
     "id",
     "section_id",
@@ -245,8 +245,8 @@ def check_toc(parser: GuideParser, errors: list[str]) -> None:
             continue
         chapter_label = labels[0].text.strip()
         chapter_labels.append(chapter_label)
-        if not CHAPTER_LABEL_PATTERN.fullmatch(chapter_label):
-            add_error(errors, f"section {section_id} chapter label must use '3.1 <chapter_title>' format")
+        if not SECTION_LABEL_PATTERN.fullmatch(chapter_label):
+            add_error(errors, f"section {section_id} chapter label must use positive '<section_number> <chapter_title>' format such as '1.1 <chapter_title>'")
         if toc_link.text.strip() != chapter_label:
             add_error(errors, f"TOC label for section {section_id} must match its chapter label")
         section = next(
@@ -393,7 +393,7 @@ def check_manifest(
                 add_error(errors, f"{label}.refs must be an array")
             locator = block.get("source_locator")
             if not valid_source_locator(locator):
-                add_error(errors, f"{label}.source_locator must use canonical format such as p.1 - p.2, fig. 3, table 4, or 3.1 <chapter_title>")
+                add_error(errors, f"{label}.source_locator must use canonical format such as p.1 - p.2, fig. 3, table 4, or <section_number> <chapter_title>")
             statement = block.get("statement")
             if not isinstance(statement, str) or not statement.strip():
                 add_error(errors, f"{label}.statement must be a non-empty string")

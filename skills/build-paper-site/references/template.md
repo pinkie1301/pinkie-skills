@@ -15,7 +15,7 @@ Keep the template CSS, JavaScript, and accessibility hooks intact unless intenti
 
 ## Replacement points
 
-Replace the marked metadata placeholders, `{{TOC_ITEMS}}`, `{{SECTIONS}}`, `{{NOTES_JSON}}`, and `{{MANIFEST_JSON}}`. The HTML comments around `{{SECTIONS}}` contain the canonical snippets for:
+Replace the marked metadata placeholders, including `{{SECTION_NUMBER}}`, `{{TOC_ITEMS}}`, `{{SECTIONS}}`, `{{NOTES_JSON}}`, and `{{MANIFEST_JSON}}`. Give every paired TOC/section block a positive hierarchical number such as `1.1`, `1.2`, `2.1`, or `2.2`; the HTML comments around `{{SECTIONS}}` contain the canonical snippets for:
 
 - matching a TOC item with a section and its visible chapter label;
 - evidence-linked prose and formula blocks;

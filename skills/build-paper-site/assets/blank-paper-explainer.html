@@ -907,10 +907,11 @@
           5. 實驗結果
           6. 結論
 
-          One TOC item and matching section. Keep the visible label identical:
-          <li><a class="toc-link" data-section-link href="#{{SECTION_ID}}"><b>3.1</b><span>{{CHAPTER_TITLE}}</span></a></li>
-          <section id="{{SECTION_ID}}" data-title="3.1 {{CHAPTER_TITLE}}">
-            <div class="chapter-label" data-chapter-label>3.1 {{CHAPTER_TITLE}}</div>
+          One TOC item and matching section. Use a positive hierarchical number
+          such as 1.1, 1.2, 2.1, or 2.2, and keep the visible label identical:
+          <li><a class="toc-link" data-section-link href="#{{SECTION_ID}}"><b>{{SECTION_NUMBER}}</b><span>{{CHAPTER_TITLE}}</span></a></li>
+          <section id="{{SECTION_ID}}" data-title="{{SECTION_NUMBER}} {{CHAPTER_TITLE}}">
+            <div class="chapter-label" data-chapter-label>{{SECTION_NUMBER}} {{CHAPTER_TITLE}}</div>
             <h2>{{SECTION_HEADING}}</h2>
             {{SECTION_CONTENT}}
           </section>

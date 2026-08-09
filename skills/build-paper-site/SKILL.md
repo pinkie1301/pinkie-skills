@@ -10,7 +10,7 @@ Build one portable paper-guide website (`<paper_short_name>_navigator.html`) and
 ## Workflow
 
 1. Resolve a persistent writable output folder. Keep the HTML, local assets, manifest, and reproducible build files together; use conversation-scoped temporary storage only when no stable folder is available and disclose that boundary in the final response.
-2. Inspect the PDF and plan a paper-specific reading path. Use `背景、問題定義、研究方法、實驗設計、實驗結果、結論` only as optional starting points. Add, remove, merge, split, or reorder sections to match the paper. Give every section and TOC item the same visible `3.1 <chapter_title>`-style label.
+2. Inspect the PDF and plan a paper-specific reading path. Use `背景、問題定義、研究方法、實驗設計、實驗結果、結論` only as optional starting points. Add, remove, merge, split, or reorder sections to match the paper. Give every section and TOC item the same visible hierarchical label: `1.1`, `1.2`, `2.1`, `2.2`, `2.3`, `3.1`, `3.2`, and so on, followed by the chapter title.
 3. Build the manifest with `section_order`, `sections[section_id].source_pages`, and unique evidence records. Link substantive prose, formulas, figures, tables, and technical blocks with `data-evidence-ids` and a nearby visible evidence badge. Keep paper-stated facts, derivations, and guide inferences distinct.
 4. Start from [assets/blank-paper-explainer.html](assets/blank-paper-explainer.html). Read [references/template.md](references/template.md) for placeholders and UI behavior, and [references/guide.md](references/guide.md) for manifest, evidence, notes-data, writing, and asset contracts.
 5. Crop PDF renders to actual figure/table bodies, keep local paths, and record each crop in `manifest.artifacts` with its source locator, page, and bounding box. Do not embed a full PDF page as a figure/table.
@@ -21,7 +21,7 @@ Build one portable paper-guide website (`<paper_short_name>_navigator.html`) and
 
 - Explain problem context, mechanism/data flow, experimental questions, results in context, and limitations. Do not present reused methods as new contributions.
 - Keep citations and evidence links aligned with the contracts in [references/guide.md](references/guide.md).
-- Use local cropped assets and canonical locators: `p.1`, `p.1 - p.2`, `fig. 3`, `table 4`, or `3.1 <chapter_title>`.
+- Use local cropped assets and canonical locators: `p.1`, `p.1 - p.2`, `fig. 3`, `table 4`, or `<section_number> <chapter_title>` such as `3.1 研究方法`.
 - Keep authored prose evidence-led and use consistent Taiwan terminology. Editorial style findings are warnings; structural, provenance, asset, and portability failures block delivery.
 
 ## Validation commands

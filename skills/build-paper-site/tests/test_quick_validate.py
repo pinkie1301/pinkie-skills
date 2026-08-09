@@ -120,9 +120,10 @@ class TemplateNeutralityTests(unittest.TestCase):
         for toc_label in ("背景", "問題定義", "研究方法", "實驗設計", "實驗結果", "結論"):
             with self.subTest(toc_label=toc_label):
                 self.assertIn(toc_label, source)
-        for sample in ("p.1 - p.2", "fig. 3", "table 4", "3.1 {{CHAPTER_TITLE}}"):
+        for sample in ("p.1 - p.2", "fig. 3", "table 4", "{{SECTION_NUMBER}} {{CHAPTER_TITLE}}"):
             with self.subTest(sample=sample):
                 self.assertIn(sample, source)
+        self.assertNotIn("3.1 {{CHAPTER_TITLE}}", source)
 
 
 if __name__ == "__main__":

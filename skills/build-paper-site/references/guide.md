@@ -4,7 +4,7 @@
 
 Use [template.md](template.md) for the starter shell, placeholders, and interaction hooks.
 
-The paper-specific editorial plan is flexible. Add, remove, merge, split, or reorder sections to follow the source paper. Do not create a section only to complete a generic outline. Every TOC item and section uses the same visible `3.1 <chapter_title>` label.
+The paper-specific editorial plan is flexible. Add, remove, merge, split, or reorder sections to follow the source paper. Do not create a section only to complete a generic outline. Every TOC item and section uses the same visible hierarchical `<section_number> <chapter_title>` label, such as `1.1`, `1.2`, `2.1`, `2.2`, `2.3`, `3.1`, and `3.2`.
 
 ## Manifest
 
@@ -44,7 +44,7 @@ The manifest is an audit record embedded in `<script id="guide-manifest" type="a
 
 `section_order` must equal the HTML section order and TOC targets. Each section has positive `source_pages`; section absence is represented by omitting the section, not by a placeholder or coverage state. Evidence and artifacts use unique IDs and valid section IDs. Evidence kinds are `paper-stated`, `derived`, or `guide-inference`; statuses are `verified`, `unverified`, or `not reported`. A verified paper-stated evidence block needs at least one source page.
 
-Use only these reader-visible locator forms: `p.1`, `p.1 - p.2`, `fig. 3`, `table 4`, or `3.1 <chapter_title>`. Keep extra locators in `refs`. Use lowercase `p.`, `fig.`, and `table` with one space around a page-range hyphen.
+Use only these reader-visible locator forms: `p.1`, `p.1 - p.2`, `fig. 3`, `table 4`, or `<section_number> <chapter_title>` such as `3.1 研究方法`. Keep extra locators in `refs`. Use lowercase `p.`, `fig.`, and `table` with one space around a page-range hyphen.
 
 ## Evidence-linked HTML
 
