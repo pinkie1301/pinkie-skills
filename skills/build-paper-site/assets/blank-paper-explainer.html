@@ -417,7 +417,6 @@
     .module-card,
     .formula-card,
     .callout,
-    .coverage-notice,
     .equation,
     .figure,
     .table-asset {
@@ -612,23 +611,6 @@
       background: var(--green-soft);
       font-size: 11px;
       letter-spacing: .035em;
-    }
-
-    .coverage-notice {
-      margin: 18px 0;
-      padding: 15px 17px;
-      border-color: rgba(156, 112, 34, .3);
-      border-left: 4px solid var(--gold);
-      color: #5d4b26;
-      background: var(--gold-soft);
-    }
-
-    .coverage-notice strong {
-      display: block;
-      margin-bottom: 5px;
-      font: 900 12px/1.4 var(--sans);
-      letter-spacing: .04em;
-      text-transform: uppercase;
     }
 
     .note-eyebrow {
@@ -934,12 +916,10 @@
           </section>
 
           Reusable evidence-linked prose:
-          <p data-claim-id="{{CLAIM_ID}}" data-evidence-ids="{{EVIDENCE_ID}}">
-            {{CLAIM_PROSE}} [130]
+          <p data-evidence-ids="{{EVIDENCE_ID}}">
+            {{PROSE}} [130]
             <span class="evidence-badge" data-evidence-id="{{EVIDENCE_ID}}" data-evidence-kind="{{EVIDENCE_KIND}}">p.1 - p.2</span>
           </p>
-          A non-present section keeps its visible coverage boundary:
-          <div class="coverage-notice" data-coverage-notice data-coverage-status="{{STATUS}}"><strong>{{STATUS}}</strong><p>{{STATUS_NOTE}}</p></div>
 
           Formula block (keep a readable fallback beside MathJax when used):
           <div class="equation tex2jax_process" data-technical-block data-evidence-ids="{{EVIDENCE_ID}}">
@@ -987,14 +967,18 @@
   </div>
 
   <!--
-    notes-data must have exactly the same section keys as guide-manifest.
-    Put prerequisite terms, formula meanings, and section-local bibliography
-    entries here. Keep citation numbers such as [130] directly in main prose:
+    notes-data keeps section notes separate from one global bibliography.
+    Keep citation numbers such as [130] directly in main prose:
     {
-      "{{SECTION_ID}}": {
-        "terms": [{"title": "{{TERM}}", "body": "{{TERM_EXPLANATION}}"}],
-        "formulas": [{"title": "$\\mathcal{L}_{geo}$", "body": "{{FORMULA_MEANING}}"}],
-        "citations": ["[130] {{FULL_BIBLIOGRAPHY_ENTRY}}"]
+      "sections": {
+        "{{SECTION_ID}}": {
+          "terms": [{"title": "{{TERM}}", "body": "{{TERM_EXPLANATION}}"}],
+          "formulas": [{"title": "$\\mathcal{L}_{geo}$", "body": "{{FORMULA_MEANING}}"}],
+          "citations": [130]
+        }
+      },
+      "bibliography": {
+        "130": "{{FULL_BIBLIOGRAPHY_ENTRY_WITHOUT_NUMBER}}"
       }
     }
   -->
@@ -1010,12 +994,12 @@
       const lightbox = document.getElementById('lightbox');
       const lightboxImage = lightbox.querySelector('img');
       const closeButton = lightbox.querySelector('.close');
-      let notes = {};
+      let notes = { sections: {}, bibliography: {} };
       let activeSection = sections[0] ? sections[0].id : '';
       let activeNoteTab = 'terms';
       let returnFocus = null;
 
-      try { notes = JSON.parse(document.getElementById('notes-data').textContent); } catch (error) { notes = {}; }
+      try { notes = JSON.parse(document.getElementById('notes-data').textContent); } catch (error) { notes = { sections: {}, bibliography: {} }; }
       document.addEventListener('keydown', () => document.body.classList.add('using-keyboard'), true);
       document.addEventListener('pointerdown', () => document.body.classList.remove('using-keyboard'), true);
 
@@ -1023,12 +1007,14 @@
         const section = document.getElementById(activeSection);
         noteTitle.textContent = section ? section.dataset.title : '章節解釋';
         noteBody.replaceChildren();
-        const items = notes[activeSection] && Array.isArray(notes[activeSection][activeNoteTab]) ? notes[activeSection][activeNoteTab] : [];
+        const sectionNotes = notes.sections && notes.sections[activeSection];
+        const items = sectionNotes && Array.isArray(sectionNotes[activeNoteTab]) ? sectionNotes[activeNoteTab] : [];
         items.forEach(item => {
           if (activeNoteTab === 'citations') {
             const citation = document.createElement('p');
             citation.className = 'citation-item';
-            citation.textContent = item;
+            const number = String(item);
+            citation.textContent = `[${number}] ${notes.bibliography && notes.bibliography[number] ? notes.bibliography[number] : ''}`.trim();
             noteBody.append(citation);
             return;
           }

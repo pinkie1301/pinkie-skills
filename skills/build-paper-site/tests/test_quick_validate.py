@@ -13,9 +13,9 @@ VALIDATOR = ROOT / "scripts" / "quick_validate.py"
 FIXTURES = Path(__file__).with_name("fixtures")
 
 
-def validate(name: str) -> subprocess.CompletedProcess[str]:
+def validate(name: str, *flags: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(VALIDATOR), str(FIXTURES / name), "--strict"],
+        [sys.executable, str(VALIDATOR), str(FIXTURES / name), *flags],
         capture_output=True,
         text=True,
         check=False,
@@ -23,36 +23,28 @@ def validate(name: str) -> subprocess.CompletedProcess[str]:
 
 
 class PositiveFixtureTests(unittest.TestCase):
-    def test_all_paper_types_pass_strict(self) -> None:
+    def test_all_paper_types_pass_core_contract(self) -> None:
         for paper_type in ("empirical", "theory", "survey", "dataset", "hci"):
             with self.subTest(paper_type=paper_type):
                 result = validate(f"valid_{paper_type}.html")
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_nonpresent_section_uses_coverage_notice(self) -> None:
-        result = validate("valid_theory.html")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-    def test_inference_without_pages_passes_with_statement(self) -> None:
-        result = validate("valid_empirical.html")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-    def test_style_exclusions_preserve_quoted_and_bibliography_text(self) -> None:
+    def test_editorial_exclusions_do_not_fail_core_contract(self) -> None:
         result = validate("valid_style_exclusions.html")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_strict_flag_remains_compatible(self) -> None:
+        result = validate("valid_empirical.html", "--strict")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 class NegativeFixtureTests(unittest.TestCase):
     CASES = {
         "invalid_empty_evidence.html": "evidence must contain at least one block",
-        "invalid_empty_claims.html": "claims must contain at least one claim",
         "invalid_duplicate_evidence_id.html": "duplicate evidence id",
-        "invalid_duplicate_claim_id.html": "duplicate claim id",
         "invalid_unknown_evidence.html": "unknown evidence id",
         "invalid_unused_evidence.html": "unused evidence id",
-        "invalid_dangling_claim.html": "must reference at least one evidence id",
-        "invalid_unused_claim.html": "unused claim id",
-        "invalid_present_without_source.html": "present section question requires source_pages",
+        "invalid_present_without_source.html": "section question requires source_pages",
         "invalid_inference_without_statement.html": "statement must be a non-empty string",
         "invalid_missing_source_locator.html": "source_locator must use canonical format",
         "invalid_source_locator_format.html": "source_locator must use canonical format",
@@ -65,32 +57,20 @@ class NegativeFixtureTests(unittest.TestCase):
         "invalid_technical_without_evidence.html": "empty data-evidence-ids in section method",
         "invalid_badge_kind.html": "badge kind mismatch",
         "invalid_missing_badge.html": "citation for ev-question has no nearby evidence badge",
-        "invalid_unknown_claim.html": "unknown claim id",
-        "invalid_paper_type.html": "guide-manifest.paper_type is invalid",
         "invalid_evidence_extra_field.html": "has unknown fields: basis_ids",
-        "invalid_nonpresent_status_note.html": "non-present section scope requires a non-empty status_note",
-        "invalid_nonpresent_notice.html": "non-present section scope requires a coverage notice",
+        "invalid_removed_manifest_field.html": "guide-manifest.paper_type is removed; omit it",
         "invalid_paper_evidence_without_page.html": "verified paper-stated evidence requires source_pages",
         "invalid_missing_notes_data.html": "notes-data JSON is missing",
         "invalid_note_item_body.html": "body must be a non-empty string",
         "invalid_note_tabs.html": "right explanation rail requires exactly three tabs in order: terms, formulas, citations",
-        "invalid_citation_format.html": "must begin with [number] and contain a full bibliography entry",
-        "invalid_missing_citation_entry.html": "uses inline citation [130] without a matching bibliography entry",
+        "invalid_missing_bibliography_entry.html": "references missing bibliography entry [130]",
+        "invalid_bibliography_format.html": "must contain a full bibliography entry",
         "invalid_inline_explainer.html": "inline background notes are removed",
         "invalid_empty_heading.html": "empty rendered h2 in section question",
         "invalid_empty_paragraph.html": "empty rendered p in section question",
         "invalid_empty_note_card.html": "empty rendered note card",
         "invalid_empty_citation_item.html": "empty rendered citation item",
         "invalid_empty_section.html": "section question has no substantive body content",
-        "invalid_contrast_not_but.html": "prohibited negative-contrast construction: 不是…而是…",
-        "invalid_contrast_not_really_but.html": "prohibited negative-contrast construction: 並非…而是…",
-        "invalid_contrast_focus.html": "prohibited negative-contrast construction: 重點不是…而是…",
-        "invalid_contrast_rather.html": "prohibited negative-contrast construction: 與其說…不如說…",
-        "invalid_term_data.html": "uses non-Taiwan term 數據; use 資料",
-        "invalid_term_network.html": "uses non-Taiwan term 網絡; use 網路",
-        "invalid_term_optimize.html": "uses non-Taiwan term 優化; use 最佳化",
-        "invalid_term_robustness.html": "uses non-Taiwan term 魯棒性; use 穩健性",
-        "invalid_note_style.html": "notes-data.question.terms[1].body uses prohibited negative-contrast construction",
     }
 
     def test_invalid_fixtures_fail_for_expected_reason(self) -> None:
@@ -102,6 +82,28 @@ class NegativeFixtureTests(unittest.TestCase):
                 self.assertIn(expected, output)
 
 
+class EditorialWarningTests(unittest.TestCase):
+    CASES = (
+        "invalid_contrast_not_but.html",
+        "invalid_contrast_not_really_but.html",
+        "invalid_contrast_focus.html",
+        "invalid_contrast_rather.html",
+        "invalid_term_data.html",
+        "invalid_term_network.html",
+        "invalid_term_optimize.html",
+        "invalid_term_robustness.html",
+        "invalid_note_style.html",
+    )
+
+    def test_editorial_findings_are_warnings(self) -> None:
+        for name in self.CASES:
+            with self.subTest(fixture=name):
+                result = validate(name, "--editorial")
+                output = result.stdout + result.stderr
+                self.assertEqual(result.returncode, 0, output)
+                self.assertIn("WARN:", output)
+
+
 class TemplateNeutralityTests(unittest.TestCase):
     def test_template_is_layout_only_without_removed_ui(self) -> None:
         source = (ROOT / "assets" / "blank-paper-explainer.html").read_text(encoding="utf-8")
@@ -109,7 +111,7 @@ class TemplateNeutralityTests(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertNotIn(token, source)
         self.assertNotRegex(source.lower(), r"\bbest\b")
-        for token in ("#overview", "#context", "#problem", "#approach", "#setup", "#results", "#discussion", "#conclusion", "data-depth-preset", "background-note", "eq-explain"):
+        for token in ("#overview", "#context", "#problem", "#approach", "#setup", "#results", "#discussion", "#conclusion", "data-depth-preset", "background-note", "eq-explain", "coverage-notice"):
             with self.subTest(token=token):
                 self.assertNotIn(token, source)
         for token in ("notesPanel", 'data-note-tab="terms"', 'data-note-tab="formulas"', 'data-note-tab="citations"', "專有名詞", "公式涵義", "引用", "notes-data", "{{NOTES_JSON}}"):

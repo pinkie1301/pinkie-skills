@@ -18,14 +18,13 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-PAPER_TYPES = {"empirical", "theory", "survey", "dataset", "hci"}
-COVERAGE_STATUSES = {"present", "not reported", "not applicable", "unverified"}
 EVIDENCE_KINDS = {"paper-stated", "derived", "guide-inference"}
 EVIDENCE_STATUSES = {"verified", "unverified", "not reported"}
 NOTE_TABS = ("terms", "formulas", "citations")
 NOTE_ITEM_FIELDS = {"title", "body"}
 CITATION_MARKER_PATTERN = re.compile(r"\[(\d+)\]")
-CITATION_ENTRY_PATTERN = re.compile(r"^\[(\d+)\]\s+(.{20,})$")
+BIBLIOGRAPHY_ENTRY_PATTERN = re.compile(r"^.{20,}$")
+BIBLIOGRAPHY_KEY_PATTERN = re.compile(r"^\d+$")
 PROHIBITED_CONTRAST_PATTERNS = (
     ("重點不是…而是…", re.compile(r"重點不是[^。！？!?]{0,160}而是")),
     ("並非…而是…", re.compile(r"並非[^。！？!?]{0,160}而是")),
@@ -52,7 +51,6 @@ EVIDENCE_FIELDS = {
     "source_locator",
     "statement",
 }
-CLAIM_FIELDS = {"id", "section_id", "statement", "evidence_ids"}
 ARTIFACT_FIELDS = {"id", "kind", "section_id", "asset_path", "source_locator", "crop"}
 VOID_ELEMENTS = {
     "area",
@@ -172,14 +170,14 @@ def add_warning(warnings: list[str], message: str) -> None:
     warnings.append(message)
 
 
-def check_authored_style(text: str, label: str, errors: list[str]) -> None:
+def check_authored_style(text: str, label: str, warnings: list[str]) -> None:
     for construction, pattern in PROHIBITED_CONTRAST_PATTERNS:
         if pattern.search(text):
-            add_error(errors, f"{label} uses prohibited negative-contrast construction: {construction}")
+            add_warning(warnings, f"{label} uses editorial negative-contrast construction: {construction}")
             break
     for term, replacement in PROHIBITED_TAIWAN_TERMS.items():
         if term in text:
-            add_error(errors, f"{label} uses non-Taiwan term {term}; use {replacement}")
+            add_warning(warnings, f"{label} uses non-Taiwan term {term}; consider {replacement}")
 
 
 def is_external(value: str) -> bool:
@@ -318,6 +316,9 @@ def check_manifest(
     if payload == "__invalid_json__" or not isinstance(payload, dict):
         add_error(errors, "guide-manifest is not a JSON object")
         return None
+    for removed_field in ("paper_type", "claims"):
+        if removed_field in payload:
+            add_error(errors, f"guide-manifest.{removed_field} is removed; omit it")
 
     order = payload.get("section_order")
     if not isinstance(order, list) or not order or any(not isinstance(item, str) or not item.strip() for item in order):
@@ -328,8 +329,6 @@ def check_manifest(
         add_error(errors, "guide-manifest.section_order does not match HTML section order")
     if not isinstance(payload.get("paper_id"), str) or not str(payload.get("paper_id", "")).strip():
         add_error(errors, "guide-manifest.paper_id is missing")
-    if payload.get("paper_type") not in PAPER_TYPES:
-        add_error(errors, f"guide-manifest.paper_type is invalid: {payload.get('paper_type')!r}")
     if not payload.get("language"):
         message = "guide-manifest.language is missing"
         (add_error if strict else add_warning)(errors if strict else warnings, message)
@@ -349,21 +348,13 @@ def check_manifest(
             if not isinstance(value, dict):
                 add_error(errors, f"guide-manifest.sections entry is not an object: {section}")
                 continue
-            for field_name in ("status", "source_pages", "status_note"):
+            for field_name in ("source_pages",):
                 if field_name not in value:
                     add_error(errors, f"guide-manifest.sections.{section}.{field_name} is required")
-            status = value.get("status")
-            if status not in COVERAGE_STATUSES:
-                add_error(errors, f"guide-manifest.sections.{section}.status is invalid: {status!r}")
             pages = value.get("source_pages")
             pages_valid = check_page_array(pages, f"guide-manifest.sections.{section}.source_pages", errors)
-            if status == "present" and (not pages_valid or not pages):
-                add_error(errors, f"present section {section} requires source_pages with at least one positive integer")
-            status_note = value.get("status_note")
-            if not isinstance(status_note, str):
-                add_error(errors, f"guide-manifest.sections.{section}.status_note must be a string")
-            elif status != "present" and not status_note.strip():
-                add_error(errors, f"non-present section {section} requires a non-empty status_note")
+            if not pages_valid or not pages:
+                add_error(errors, f"section {section} requires source_pages with at least one positive integer")
 
     evidence = payload.get("evidence")
     evidence_ids: set[str] = set()
@@ -406,47 +397,6 @@ def check_manifest(
             statement = block.get("statement")
             if not isinstance(statement, str) or not statement.strip():
                 add_error(errors, f"{label}.statement must be a non-empty string")
-
-    claims = payload.get("claims")
-    claim_ids: set[str] = set()
-    if not isinstance(claims, list):
-        add_error(errors, "guide-manifest.claims must be an array")
-    else:
-        if strict and not claims:
-            add_error(errors, "guide-manifest.claims must contain at least one claim")
-        for index, claim in enumerate(claims, start=1):
-            label = f"guide-manifest.claims[{index}]"
-            if not isinstance(claim, dict):
-                add_error(errors, f"{label} must be an object")
-                continue
-            check_exact_fields(claim, CLAIM_FIELDS, label, errors)
-            claim_id = claim.get("id")
-            if not isinstance(claim_id, str) or not claim_id.strip():
-                add_error(errors, f"{label}.id must be a non-empty string")
-            elif claim_id in claim_ids:
-                add_error(errors, f"duplicate claim id: {claim_id}")
-            else:
-                claim_ids.add(claim_id)
-            if claim.get("section_id") not in sections:
-                add_error(errors, f"{label}.section_id is unknown: {claim.get('section_id')!r}")
-            statement = claim.get("statement")
-            if not isinstance(statement, str) or not statement.strip():
-                add_error(errors, f"{label}.statement must be a non-empty string")
-            claim_evidence = claim.get("evidence_ids")
-            if not isinstance(claim_evidence, list):
-                add_error(errors, f"{label}.evidence_ids must be an array")
-            elif not claim_evidence:
-                add_error(errors, f"{label} must reference at least one evidence id")
-            else:
-                seen: set[str] = set()
-                for evidence_id in claim_evidence:
-                    if not isinstance(evidence_id, str) or not evidence_id.strip():
-                        add_error(errors, f"{label}.evidence_ids must contain non-empty strings")
-                    elif evidence_id in seen:
-                        add_error(errors, f"{label} repeats evidence id: {evidence_id}")
-                    elif evidence_id not in evidence_ids:
-                        add_error(errors, f"{label} references unknown evidence id: {evidence_id}")
-                    seen.add(evidence_id)
 
     artifacts = payload.get("artifacts", [])
     artifact_ids: set[str] = set()
@@ -496,7 +446,7 @@ def check_notes_contract(
     parser: GuideParser,
     errors: list[str],
     warnings: list[str],
-    strict: bool,
+    editorial: bool,
 ) -> None:
     panels = [element for element in parser.elements if element.attrs.get("id") == "notesPanel" and "notes" in element.classes]
     if len(panels) != 1:
@@ -518,24 +468,43 @@ def check_notes_contract(
 
     payload = extract_json_script(source, "notes-data")
     if payload is None:
-        message = "notes-data JSON is missing"
-        (add_error if strict else add_warning)(errors if strict else warnings, message)
+        add_error(errors, "notes-data JSON is missing")
         return
     if payload == "__invalid_json__" or not isinstance(payload, dict):
         add_error(errors, "notes-data is not a JSON object")
         return
 
-    missing = [section for section in parser.sections if section not in payload]
-    extra = sorted(set(payload) - set(parser.sections))
-    if missing:
-        add_error(errors, f"notes-data missing sections: {', '.join(missing)}")
-    if extra:
-        add_error(errors, f"notes-data has unknown sections: {', '.join(extra)}")
+    check_exact_fields(payload, {"sections", "bibliography"}, "notes-data", errors)
+    section_data = payload.get("sections")
+    bibliography = payload.get("bibliography")
+    if not isinstance(section_data, dict):
+        add_error(errors, "notes-data.sections must be an object")
+        section_data = {}
+    if not isinstance(bibliography, dict):
+        add_error(errors, "notes-data.bibliography must be an object")
+        bibliography = {}
 
-    item_count = 0
+    bibliography_keys: set[str] = set()
+    for number, entry in bibliography.items():
+        label = f"notes-data.bibliography[{number!r}]"
+        if not isinstance(number, str) or not BIBLIOGRAPHY_KEY_PATTERN.fullmatch(number):
+            add_error(errors, f"{label} must use a numeric bibliography key")
+            continue
+        if not isinstance(entry, str) or not BIBLIOGRAPHY_ENTRY_PATTERN.fullmatch(entry.strip()):
+            add_error(errors, f"{label} must contain a full bibliography entry")
+            continue
+        bibliography_keys.add(number)
+
+    missing = [section for section in parser.sections if section not in section_data]
+    extra = sorted(set(section_data) - set(parser.sections))
+    if missing:
+        add_error(errors, f"notes-data.sections missing sections: {', '.join(missing)}")
+    if extra:
+        add_error(errors, f"notes-data.sections has unknown sections: {', '.join(extra)}")
+
     citation_numbers: dict[str, set[str]] = {}
-    for section, value in payload.items():
-        label = f"notes-data.{section}"
+    for section, value in section_data.items():
+        label = f"notes-data.sections.{section}"
         if not isinstance(value, dict):
             add_error(errors, f"{label} must be an object")
             continue
@@ -545,7 +514,6 @@ def check_notes_contract(
             if not isinstance(items, list):
                 add_error(errors, f"{label}.{tab_name} must be an array")
                 continue
-            item_count += len(items)
             for index, item in enumerate(items, start=1):
                 item_label = f"{label}.{tab_name}[{index}]"
                 if not isinstance(item, dict):
@@ -556,29 +524,28 @@ def check_notes_contract(
                     field_value = item.get(field_name)
                     if not isinstance(field_value, str) or not field_value.strip():
                         add_error(errors, f"{item_label}.{field_name} must be a non-empty string")
-                    elif strict:
-                        check_authored_style(field_value, f"{item_label}.{field_name}", errors)
+                    elif editorial:
+                        check_authored_style(field_value, f"{item_label}.{field_name}", warnings)
+
         citations = value.get("citations")
         if not isinstance(citations, list):
             add_error(errors, f"{label}.citations must be an array")
             continue
-        item_count += len(citations)
         seen_numbers: set[str] = set()
         citation_numbers[section] = seen_numbers
         for index, item in enumerate(citations, start=1):
             item_label = f"{label}.citations[{index}]"
-            if not isinstance(item, str):
-                add_error(errors, f"{item_label} must be a full bibliography string")
+            number = str(item) if isinstance(item, int) and not isinstance(item, bool) else ""
+            if not number or int(number) <= 0:
+                add_error(errors, f"{item_label} must be a positive bibliography number")
                 continue
-            match = CITATION_ENTRY_PATTERN.fullmatch(item.strip())
-            if not match:
-                add_error(errors, f"{item_label} must begin with [number] and contain a full bibliography entry")
-                continue
-            number = match.group(1)
             if number in seen_numbers:
-                add_error(errors, f"{label}.citations has duplicate bibliography number [{number}]")
+                add_error(errors, f"{label}.citations repeats bibliography number [{number}]")
+            if number not in bibliography_keys:
+                add_error(errors, f"{label}.citations references missing bibliography entry [{number}]")
             seen_numbers.add(number)
 
+    used_bibliography: set[str] = set()
     for section in parser.sections:
         prose = " ".join(
             element.text
@@ -586,13 +553,16 @@ def check_notes_contract(
             if element.section_id == section and element.tag in {"p", "li"}
         )
         inline_numbers = set(CITATION_MARKER_PATTERN.findall(prose))
+        used_bibliography.update(inline_numbers)
         listed_numbers = citation_numbers.get(section, set())
         for number in sorted(inline_numbers - listed_numbers, key=int):
-            add_error(errors, f"section {section} uses inline citation [{number}] without a matching bibliography entry")
+            add_error(errors, f"section {section} uses inline citation [{number}] without a matching notes-data entry")
         for number in sorted(listed_numbers - inline_numbers, key=int):
             add_error(errors, f"section {section} lists bibliography entry [{number}] without an inline citation")
-    if strict and item_count == 0:
-        add_error(errors, "notes-data must contain at least one term, formula, or citation item")
+        for number in sorted(inline_numbers - bibliography_keys, key=int):
+            add_error(errors, f"section {section} uses inline citation [{number}] without a bibliography entry")
+    for number in sorted(bibliography_keys - used_bibliography, key=int):
+        add_error(errors, f"unused bibliography entry [{number}]")
 
 
 def split_ids(value: str) -> list[str]:
@@ -622,9 +592,7 @@ def check_badges_and_links(
     if not strict:
         return
     evidence = records_by_id(manifest.get("evidence"))
-    claims = records_by_id(manifest.get("claims"))
     evidence_uses: dict[str, set[str]] = {evidence_id: set() for evidence_id in evidence}
-    claim_uses: dict[str, int] = {claim_id: 0 for claim_id in claims}
 
     badge_indices: list[int] = []
     for index, element in enumerate(parser.elements):
@@ -653,11 +621,9 @@ def check_badges_and_links(
             if locator and locator not in element.text:
                 add_error(errors, f"evidence badge {evidence_id} must visibly label its source locator: {locator}")
 
-    citation_indices: list[int] = []
     for index, element in enumerate(parser.elements):
         if "data-evidence-ids" not in element.attrs:
             continue
-        citation_indices.append(index)
         reference_ids = split_ids(element.attrs.get("data-evidence-ids", ""))
         if not reference_ids:
             add_error(errors, f"empty data-evidence-ids in section {element.section_id or '<none>'}")
@@ -693,32 +659,6 @@ def check_badges_and_links(
             for label in artifact_labels:
                 add_error(errors, f"{label} in section {element.section_id or '<none>'} requires data-evidence-ids")
 
-    html_claim_ids: set[str] = set()
-    for element in parser.elements:
-        if "data-claim-id" not in element.attrs:
-            continue
-        claim_id = element.attrs.get("data-claim-id", "").strip()
-        if not claim_id:
-            add_error(errors, "data-claim-id must be non-empty")
-            continue
-        if claim_id in html_claim_ids:
-            add_error(errors, f"duplicate HTML claim id: {claim_id}")
-        html_claim_ids.add(claim_id)
-        claim = claims.get(claim_id)
-        if claim is None:
-            add_error(errors, f"HTML references unknown claim id: {claim_id}")
-            continue
-        claim_uses[claim_id] += 1
-        if element.section_id != claim.get("section_id"):
-            add_error(errors, f"claim {claim_id} belongs to section {claim.get('section_id')}, used in {element.section_id or '<none>'}")
-        html_evidence = split_ids(element.attrs.get("data-evidence-ids", ""))
-        claim_evidence = claim.get("evidence_ids") if isinstance(claim.get("evidence_ids"), list) else []
-        if html_evidence != claim_evidence:
-            add_error(errors, f"claim {claim_id} data-evidence-ids do not match manifest evidence_ids")
-
-    for claim_id, uses in claim_uses.items():
-        if uses == 0:
-            add_error(errors, f"unused claim id: {claim_id}")
     for evidence_id, uses in evidence_uses.items():
         if not uses:
             add_error(errors, f"unused evidence id: {evidence_id}")
@@ -754,30 +694,10 @@ def check_badges_and_links(
         if uses == 0:
             add_error(errors, f"unused artifact id: {artifact_id}")
 
-    section_data = manifest.get("sections")
-    if isinstance(section_data, dict):
-        for section in parser.sections:
-            value = section_data.get(section)
-            if not isinstance(value, dict):
-                continue
-            status = value.get("status")
-            if status == "present":
-                used = any(section in uses for uses in evidence_uses.values())
-                if not used:
-                    add_error(errors, f"present section {section} has no used evidence")
-                continue
-            notices = [
-                element
-                for element in parser.elements
-                if element.section_id == section
-                and "coverage-notice" in element.classes
-                and "data-coverage-notice" in element.attrs
-            ]
-            if not notices:
-                add_error(errors, f"non-present section {section} requires a coverage notice")
-                continue
-            if not any(notice.attrs.get("data-coverage-status") == status and notice.text.strip() for notice in notices):
-                add_error(errors, f"coverage notice for section {section} must be visible and match status {status}")
+    for section in parser.sections:
+        used = any(section in uses for uses in evidence_uses.values())
+        if not used:
+            add_error(errors, f"section {section} has no used evidence")
 
 
 def check_scripts(parser: GuideParser, html_path: Path, errors: list[str], warnings: list[str]) -> None:
@@ -808,7 +728,14 @@ def check_interactive_fallbacks(parser: GuideParser, errors: list[str]) -> None:
                 add_error(errors, f"{kind} content in section {section} needs a same-section data-fallback-for={kind} marker")
 
 
-def check_content_contract(source: str, parser: GuideParser, errors: list[str], strict: bool) -> None:
+def check_content_contract(
+    source: str,
+    parser: GuideParser,
+    errors: list[str],
+    warnings: list[str],
+    strict: bool,
+    editorial: bool,
+) -> None:
     if re.search(r"\{\{[^}]+\}\}", source):
         add_error(errors, "unfinished template placeholder found")
     if re.search(r"\b(?:TODO|FIXME|TBD|lorem ipsum|not implemented)\b", source, re.IGNORECASE):
@@ -847,7 +774,8 @@ def check_content_contract(source: str, parser: GuideParser, errors: list[str], 
             ancestors = (parser.elements[ancestor] for ancestor in element.ancestors)
             if any(ancestor.tag in excluded_ancestor_tags for ancestor in ancestors):
                 continue
-            check_authored_style(substantive_text(index), f"visible {element.tag} in section {element.section_id or '<none>'}", errors)
+            if editorial:
+                check_authored_style(substantive_text(index), f"visible {element.tag} in section {element.section_id or '<none>'}", warnings)
 
         substantive_tags = {"p", "figure", "table", "blockquote", "pre", "ul", "ol", "canvas"}
         for section_id in parser.sections:
@@ -860,7 +788,6 @@ def check_content_contract(source: str, parser: GuideParser, errors: list[str], 
                 is_descendant(element, section_index)
                 and (
                     element.tag in substantive_tags
-                    or "coverage-notice" in element.classes
                     or "data-technical-block" in element.attrs
                 )
                 and (substantive_text(index) or element.tag in {"figure", "table", "canvas"})
@@ -898,13 +825,15 @@ def check_inline_javascript(parser: GuideParser, errors: list[str], warnings: li
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("html", type=Path, help="paper-guide.html to validate")
-    parser.add_argument("--strict", action="store_true", help="enforce the complete manifest and HTML evidence contract")
+    parser.add_argument("--strict", action="store_true", help="deprecated compatibility flag; the core contract is always enforced")
+    parser.add_argument("--editorial", action="store_true", help="warn about editorial style preferences without failing validation")
     parser.add_argument("--json", action="store_true", dest="as_json", help="emit a JSON report")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    strict = True
     html_path = args.html.resolve()
     errors: list[str] = []
     warnings: list[str] = []
@@ -932,17 +861,17 @@ def main() -> int:
             check_local_path(image, "image", html_path, errors)
     check_anchors(parser, html_path, errors)
     check_toc(parser, errors)
-    manifest = check_manifest(source, parser.sections, errors, warnings, args.strict)
-    check_notes_contract(source, parser, errors, warnings, args.strict)
+    manifest = check_manifest(source, parser.sections, errors, warnings, strict)
+    check_notes_contract(source, parser, errors, warnings, args.editorial)
     if manifest and isinstance(manifest.get("artifacts"), list):
         for artifact in manifest["artifacts"]:
             if isinstance(artifact, dict) and isinstance(artifact.get("asset_path"), str):
                 check_local_path(artifact["asset_path"], "artifact asset", html_path, errors)
     check_scripts(parser, html_path, errors, warnings)
     check_interactive_fallbacks(parser, errors)
-    check_content_contract(source, parser, errors, args.strict)
+    check_content_contract(source, parser, errors, warnings, strict, args.editorial)
     if manifest is not None:
-        check_badges_and_links(parser, manifest, errors, args.strict)
+        check_badges_and_links(parser, manifest, errors, strict)
     check_inline_javascript(parser, errors, warnings)
 
     report = {
