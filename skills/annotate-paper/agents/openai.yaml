@@ -1,0 +1,4 @@
+interface:
+  display_name: "Annotate Paper"
+  short_description: "Create bilingual annotated paper HTML"
+  default_prompt: "Use $annotate-paper to turn this academic paper into a bilingual annotated HTML document."

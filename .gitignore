@@ -8,6 +8,8 @@
 /skills/*
 !/skills/build-paper-site/
 !/skills/build-paper-site/**
+!/skills/annotate-paper/
+!/skills/annotate-paper/**
 
 # Local files currently found inside the skill.
 **/.DS_Store
